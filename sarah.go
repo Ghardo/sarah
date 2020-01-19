@@ -23,13 +23,13 @@ type ScanRequest struct {
 	Options map[string]interface{} `json:"options"`
 }
 
-var lastScan string
-var scanpath string
+var scanFile string
+var scanPath string
 
 func main() {
 
 	port := flag.Int("port", 7575, "The api listen on this port.")
-	flag.StringVar(&scanpath, "path", "/tmp", "The path scans saved.")
+	flag.StringVar(&scanPath, "path", "/tmp", "The path scans saved.")
 
 	if os.Getenv("SARAHRC") == "" {
 		os.Setenv("SARAHRC", "/etc/sarahrc")
@@ -43,6 +43,8 @@ func main() {
 		die(err)
 	}
 	defer sane.Exit()
+
+	os.MkdirAll(scanPath, os.ModePerm)
 
 	router := gin.Default()
 	router.Use(cors.Default())
@@ -98,7 +100,12 @@ func config(c *gin.Context) {
 }
 
 func last(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"file": lastScan})
+	if c.GetHeader("Accept") == "application/json" {
+		c.JSON(http.StatusOK, gin.H{"path": scanPath, "file": scanFile})
+	} else {
+		lastScan := fmt.Sprintf("%s/%s", scanPath, scanFile)
+		readImage(c, lastScan)
+	}
 }
 
 func scan(c *gin.Context) {
@@ -109,14 +116,15 @@ func scan(c *gin.Context) {
 		return
 	}
 
-	lastScan = fmt.Sprintf("%s/%s", scanpath, getScanFilename())
+	scanFile = getScanFilename()
+	lastScan := fmt.Sprintf("%s/%s", scanPath, scanFile)
 	err := doScan(sr, lastScan)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	readImage(c, lastScan)
+	last(c)
 }
 
 func getScanFilename() string {
@@ -146,7 +154,6 @@ func readImage(c *gin.Context, filename string) {
 
 	extraHeaders := map[string]string{
 		"Content-Disposition": contentDispostion,
-		"filename":            filename,
 	}
 
 	c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)

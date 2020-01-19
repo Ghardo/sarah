@@ -1,8 +1,18 @@
 @protocoll=http
-@host=localhost
+@host=scan.rpi
 @port=7575
 @device=genesys:libusb:001:004
 
+POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
+content-type: application/json
+Accept: application/json
+
+{
+    "device":"{{device}}",
+    "options":{"resolution":300}
+}
+
+###
 
 POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
 content-type: application/json
@@ -23,6 +33,11 @@ GET {{protocoll}}://{{host}}:{{port}}/list HTTP/1.1
 ###
 
 GET {{protocoll}}://{{host}}:{{port}}/last HTTP/1.1
+
+###
+
+GET {{protocoll}}://{{host}}:{{port}}/last HTTP/1.1
+Accept: application/json
 
 ###
 

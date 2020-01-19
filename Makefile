@@ -3,10 +3,14 @@ PACKAGE_NAME=sarah
 PACKAGE_VERSION=1.0.0
 PACKAGE_DESCRIPTION="Simple Sane Rest Api"
 
+clean:
+	rm -vrf ./build
+	rm -vf sarah
+
 build: 
 	go build sarah.go
 
-deb: build
+deb: clean build
 	mkdir -p ./build/usr/local/bin
 	mkdir -p ./build/etc/systemd/system
 	cp sarah ./build/usr/local/bin
