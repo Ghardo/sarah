@@ -1,0 +1,29 @@
+@protocoll=http
+@host=localhost
+@port=7575
+@device=genesys:libusb:001:004
+
+
+POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
+content-type: application/json
+
+{
+    "device":"{{device}}",
+    "options":{"resolution":300}
+}
+
+###
+
+GET{{protocoll}}://{{host}}:{{port}} HTTP/1.1
+
+###
+
+GET {{protocoll}}://{{host}}:{{port}}/list HTTP/1.1
+
+###
+
+GET {{protocoll}}://{{host}}:{{port}}/last HTTP/1.1
+
+###
+
+GET {{protocoll}}://{{host}}:{{port}}/config?device={{device}} HTTP/1.1

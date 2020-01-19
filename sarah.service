@@ -1,0 +1,10 @@
+[Unit]
+Description=Simple Sane Rest Api
+
+[Service]
+ExecStart=/usr/local/bin/sarah
+Restart=always
+Environment="GIN_MODE=release"
+
+[Install]
+WantedBy=multi-user.target
