@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"image/png"
@@ -19,8 +20,8 @@ import (
 )
 
 type ScanRequest struct {
-	Device  string                 `json:"device"`
-	Options map[string]interface{} `json:"options"`
+	Device  string                 `json:"Device"`
+	Options map[string]interface{} `json:"Options"`
 }
 
 var scanFile string
@@ -50,7 +51,7 @@ func main() {
 	router.Use(cors.Default())
 
 	router.POST("/scan", scan)
-	router.GET("/", last)
+	router.GET("/", hello)
 	router.GET("/list", list)
 	router.GET("/config", config)
 	router.GET("/last", last)
@@ -100,12 +101,22 @@ func config(c *gin.Context) {
 }
 
 func last(c *gin.Context) {
-	if c.GetHeader("Accept") == "application/json" {
-		c.JSON(http.StatusOK, gin.H{"path": scanPath, "file": scanFile})
-	} else {
-		lastScan := fmt.Sprintf("%s/%s", scanPath, scanFile)
+	if c.GetHeader("Accept") == "image/png" {
+		scan := c.Query("scan")
+		var lastScan string
+		if scan == "" {
+			lastScan = fmt.Sprintf("%s/%s", scanPath, scanFile)
+		} else {
+			lastScan = fmt.Sprintf("%s/%s", scanPath, scan)
+		}
 		readImage(c, lastScan)
+	} else {
+		c.JSON(http.StatusOK, gin.H{"path": scanPath, "file": scanFile})
 	}
+}
+
+func hello(c *gin.Context) {
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("Hi, i am sarah. "))
 }
 
 func scan(c *gin.Context) {
@@ -119,8 +130,7 @@ func scan(c *gin.Context) {
 	scanFile = getScanFilename()
 	lastScan := fmt.Sprintf("%s/%s", scanPath, scanFile)
 	err := doScan(sr, lastScan)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if handleError(c, err) {
 		return
 	}
 
@@ -135,14 +145,13 @@ func getScanFilename() string {
 func readImage(c *gin.Context, filename string) {
 
 	f, err := os.Open(filename)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		log.Fatal(err)
+	if handleError(c, err) {
+		return
 	}
 
 	fi, err := f.Stat()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if handleError(c, err) {
+		return
 	}
 
 	reader := bufio.NewReader(f)
@@ -174,7 +183,7 @@ func openDevice(name string) (*sane.Conn, error) {
 			return sane.Open(d.Name)
 		}
 	}
-	return nil, fmt.Errorf("no device named %s", name)
+	return nil, errors.New("unknown device")
 }
 
 func doScan(sr ScanRequest, fileName string) error {
@@ -234,5 +243,86 @@ func findOption(opts []sane.Option, name string) (*sane.Option, error) {
 			return &o, nil
 		}
 	}
-	return nil, fmt.Errorf("no such option %s", name)
+	return nil, errors.New("no such option")
+}
+
+func handleError(c *gin.Context, err error) bool {
+
+	if err == nil {
+		return false
+	}
+
+	if err == sane.ErrUnsupported {
+		handleBadRequest(c, err)
+		return true
+	}
+
+	if err == sane.ErrCancelled {
+		handleBadRequest(c, err)
+		return true
+	}
+
+	if err == sane.ErrBusy {
+		handleBadRequest(c, err)
+		return true
+	}
+
+	if err == sane.ErrInvalid {
+		handleBadRequest(c, err)
+		return true
+	}
+
+	if err == sane.ErrJammed {
+		handleInternalError(c, err)
+		return true
+	}
+
+	if err == sane.ErrEmpty {
+		handleInternalError(c, err)
+		return true
+	}
+
+	if err == sane.ErrCoverOpen {
+		handleInternalError(c, err)
+		return true
+	}
+
+	if err == sane.ErrIo {
+		handleInternalError(c, err)
+		return true
+	}
+
+	if err == sane.ErrNoMem {
+		handleInternalError(c, err)
+		return true
+	}
+
+	if err == sane.ErrDenied {
+		handleInternalError(c, err)
+		return true
+	}
+
+	if err == errors.New("no such option") {
+		handleBadRequest(c, err)
+		return true
+	}
+
+	if err == errors.New("unknown device") {
+		handleBadRequest(c, err)
+		return true
+	}
+
+	handleInternalError(c, err)
+	return true
+}
+
+func handleBadRequest(c *gin.Context, err error) {
+	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	log.Printf(err.Error())
+
+}
+
+func handleInternalError(c *gin.Context, err error) {
+	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	log.Printf(err.Error())
 }

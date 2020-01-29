@@ -5,11 +5,11 @@
 
 POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
 content-type: application/json
-Accept: application/json
+Accept: image/png
 
 {
-    "device":"{{device}}",
-    "options":{"resolution":300}
+    "Device":"{{device}}",
+    "Options":{"resolution":300}
 }
 
 ###
@@ -18,13 +18,23 @@ POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
 content-type: application/json
 
 {
-    "device":"{{device}}",
-    "options":{"resolution":300}
+    "Device":"{{device}}",
+    "Options":{"resolution":300}
 }
 
 ###
 
-GET{{protocoll}}://{{host}}:{{port}} HTTP/1.1
+POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
+content-type: application/json
+
+{
+    "Device":"{{device}}",
+    "Options":{"resolution":500000}
+}
+
+###
+
+GET {{protocoll}}://{{host}}:{{port}}/ HTTP/1.1
 
 ###
 
@@ -37,8 +47,16 @@ GET {{protocoll}}://{{host}}:{{port}}/last HTTP/1.1
 ###
 
 GET {{protocoll}}://{{host}}:{{port}}/last HTTP/1.1
-Accept: application/json
+Accept: image/png
+
+###
+GET {{protocoll}}://{{host}}:{{port}}/last?scan= HTTP/1.1
+Accept: image/png
 
 ###
 
 GET {{protocoll}}://{{host}}:{{port}}/config?device={{device}} HTTP/1.1
+
+###
+
+GET {{protocoll}}://{{host}}:{{port}}/config?device=foobar HTTP/1.1
