@@ -1,17 +1,17 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
+	"image"
 	"image/png"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -24,13 +24,11 @@ type ScanRequest struct {
 	Options map[string]interface{} `json:"Options"`
 }
 
-var scanFile string
-var scanPath string
+var lastScanImage []byte
 
 func main() {
 
 	port := flag.Int("port", 7575, "The api listen on this port.")
-	flag.StringVar(&scanPath, "path", "/tmp", "The path scans saved.")
 
 	if os.Getenv("SARAHRC") == "" {
 		os.Setenv("SARAHRC", "/etc/sarahrc")
@@ -45,8 +43,6 @@ func main() {
 	}
 	defer sane.Exit()
 
-	os.MkdirAll(scanPath, os.ModePerm)
-
 	router := gin.Default()
 	router.Use(cors.Default())
 
@@ -54,7 +50,7 @@ func main() {
 	router.GET("/", hello)
 	router.GET("/list", list)
 	router.GET("/config", config)
-	router.GET("/last", last)
+	router.GET("/last", lastScan)
 
 	router.Run(strings.Join([]string{":", strconv.Itoa(*port)}, ""))
 }
@@ -100,21 +96,6 @@ func config(c *gin.Context) {
 	c.JSON(http.StatusOK, sc.Options())
 }
 
-func last(c *gin.Context) {
-	if c.GetHeader("Accept") == "image/png" {
-		scan := c.Query("scan")
-		var lastScan string
-		if scan == "" {
-			lastScan = fmt.Sprintf("%s/%s", scanPath, scanFile)
-		} else {
-			lastScan = fmt.Sprintf("%s/%s", scanPath, scan)
-		}
-		readImage(c, lastScan)
-	} else {
-		c.JSON(http.StatusOK, gin.H{"path": scanPath, "file": scanFile})
-	}
-}
-
 func hello(c *gin.Context) {
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("Hi, i am sarah. "))
 }
@@ -127,45 +108,35 @@ func scan(c *gin.Context) {
 		return
 	}
 
-	scanFile = getScanFilename()
-	lastScan := fmt.Sprintf("%s/%s", scanPath, scanFile)
-	err := doScan(sr, lastScan)
+	var err error
+	lastScanImage, err = doScan(sr)
 	if handleError(c, err) {
 		return
 	}
 
-	last(c)
+	lastScan(c)
 }
 
-func getScanFilename() string {
-	t := time.Now()
-	return fmt.Sprintf("scan-%04d%02d%02d%02d%02d%02d.png", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
-}
+func lastScan(c *gin.Context) {
+	reader := bytes.NewReader(lastScanImage)
 
-func readImage(c *gin.Context, filename string) {
+	if c.GetHeader("Accept") == "image/png" {
+		contentType := "image/png"
+		contentDispostion := fmt.Sprintf("attachment; filename=scan.png")
+		extraHeaders := map[string]string{
+			"Content-Disposition": contentDispostion,
+		}
+		c.DataFromReader(http.StatusOK, int64(reader.Len()), contentType, reader, extraHeaders)
+	} else {
+		reader := bytes.NewReader(lastScanImage)
+		img, _, err := image.DecodeConfig(reader)
 
-	f, err := os.Open(filename)
-	if handleError(c, err) {
-		return
+		if err != nil {
+			handleInternalError(c, err) // handle error somehow
+		}
+
+		c.JSON(http.StatusOK, gin.H{"width": img.Width, "height": img.Height})
 	}
-
-	fi, err := f.Stat()
-	if handleError(c, err) {
-		return
-	}
-
-	reader := bufio.NewReader(f)
-
-	contentLength := fi.Size()
-	contentType := "image/png"
-
-	contentDispostion := fmt.Sprintf("attachment; filename=\"%s\"", filename)
-
-	extraHeaders := map[string]string{
-		"Content-Disposition": contentDispostion,
-	}
-
-	c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 }
 
 func openDevice(name string) (*sane.Conn, error) {
@@ -186,24 +157,21 @@ func openDevice(name string) (*sane.Conn, error) {
 	return nil, errors.New("unknown device")
 }
 
-func doScan(sr ScanRequest, fileName string) error {
-	f, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
+func doScan(sr ScanRequest) (b []byte, err error) {
+	var c *sane.Conn
 
-	c, err := openDevice(sr.Device)
+	c, err = openDevice(sr.Device)
 	if err != nil {
-		return err
+		return b, err
 	}
 	defer c.Close()
 
 	for oName, oValue := range sr.Options {
-		o, err := findOption(c.Options(), oName)
+		var o *sane.Option
+		o, err = findOption(c.Options(), oName)
 
 		if err != nil {
-			return err
+			return b, err
 		}
 
 		if o.IsSettable {
@@ -225,16 +193,19 @@ func doScan(sr ScanRequest, fileName string) error {
 		}
 	}
 
-	img, err := c.ReadImage()
+	var img *sane.Image
+	img, err = c.ReadImage()
 	if err != nil {
-		return err
+		return b, err
 	}
 
-	if err := png.Encode(f, img); err != nil {
-		return err
+	buf := new(bytes.Buffer)
+
+	if err := png.Encode(buf, img); err != nil {
+		return b, err
 	}
 
-	return nil
+	return buf.Bytes(), nil
 }
 
 func findOption(opts []sane.Option, name string) (*sane.Option, error) {

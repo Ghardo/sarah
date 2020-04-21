@@ -1,7 +1,18 @@
 @protocoll=http
 @host=scan.rpi
 @port=7575
-@device=genesys:libusb:001:004
+@device=genesys:libusb:001:006
+
+POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
+content-type: application/json
+
+{
+    "Device":"{{device}}",
+    "Options":{"resolution":150}
+}
+
+
+###
 
 POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
 content-type: application/json
@@ -9,18 +20,28 @@ Accept: image/png
 
 {
     "Device":"{{device}}",
-    "Options":{"resolution":300}
+    "Options":{"resolution":150}
 }
 
 ###
+# DIN A4 - simple
 
 POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
 content-type: application/json
 
 {
     "Device":"{{device}}",
-    "Options":{"resolution":300}
+    "Options":{"resolution":150,"br-y":297,"br-x":210,"tl-y":0,"tl-x":0}
 }
+
+
+###
+
+POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
+content-type: application/json
+
+{"Device":"genesys:libusb:001:004","Options":{"br-y":0,"br-x":0,"tl-y":297.5,"tl-x":216.0}}
+
 
 ###
 
@@ -31,6 +52,13 @@ content-type: application/json
     "Device":"{{device}}",
     "Options":{"resolution":500000}
 }
+
+###
+POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
+Accept: image/png
+content-type: application/json
+
+{"Device":"genesys:libusb:001:004","Options":{"depth":16,"resolution":300}}
 
 ###
 
@@ -47,10 +75,6 @@ GET {{protocoll}}://{{host}}:{{port}}/last HTTP/1.1
 ###
 
 GET {{protocoll}}://{{host}}:{{port}}/last HTTP/1.1
-Accept: image/png
-
-###
-GET {{protocoll}}://{{host}}:{{port}}/last?scan= HTTP/1.1
 Accept: image/png
 
 ###
