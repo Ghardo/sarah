@@ -24,10 +24,11 @@ type ScanRequest struct {
 	Options map[string]interface{} `json:"Options"`
 }
 
-var lastScanImage []byte
+var (
+	lastScanImage []byte
+)
 
 func main() {
-
 	port := flag.Int("port", 7575, "The api listen on this port.")
 
 	if os.Getenv("SARAHRC") == "" {
@@ -50,7 +51,7 @@ func main() {
 	router.GET("/", hello)
 	router.GET("/list", list)
 	router.GET("/config", config)
-	router.GET("/last", lastScan)
+	router.GET("/image", getScanImage)
 
 	router.Run(strings.Join([]string{":", strconv.Itoa(*port)}, ""))
 }
@@ -78,7 +79,6 @@ func list(c *gin.Context) {
 }
 
 func config(c *gin.Context) {
-
 	device := c.Query("device")
 
 	if device == "" {
@@ -114,29 +114,24 @@ func scan(c *gin.Context) {
 		return
 	}
 
-	lastScan(c)
+	reader := bytes.NewReader(lastScanImage)
+	img, _, err := image.DecodeConfig(reader)
+
+	if err != nil {
+		handleInternalError(c, err) // handle error somehow
+	}
+
+	c.JSON(http.StatusOK, gin.H{"width": img.Width, "height": img.Height})
 }
 
-func lastScan(c *gin.Context) {
+func getScanImage(c *gin.Context) {
 	reader := bytes.NewReader(lastScanImage)
-
-	if c.GetHeader("Accept") == "image/png" {
-		contentType := "image/png"
-		contentDispostion := fmt.Sprintf("attachment; filename=scan.png")
-		extraHeaders := map[string]string{
-			"Content-Disposition": contentDispostion,
-		}
-		c.DataFromReader(http.StatusOK, int64(reader.Len()), contentType, reader, extraHeaders)
-	} else {
-		reader := bytes.NewReader(lastScanImage)
-		img, _, err := image.DecodeConfig(reader)
-
-		if err != nil {
-			handleInternalError(c, err) // handle error somehow
-		}
-
-		c.JSON(http.StatusOK, gin.H{"width": img.Width, "height": img.Height})
+	contentType := "image/png"
+	contentDispostion := fmt.Sprintf("attachment; filename=scan.png")
+	extraHeaders := map[string]string{
+		"Content-Disposition": contentDispostion,
 	}
+	c.DataFromReader(http.StatusOK, int64(reader.Len()), contentType, reader, extraHeaders)
 }
 
 func openDevice(name string) (*sane.Conn, error) {

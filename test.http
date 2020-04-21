@@ -3,20 +3,10 @@
 @port=7575
 @device=genesys:libusb:001:006
 
-POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
-content-type: application/json
-
-{
-    "Device":"{{device}}",
-    "Options":{"resolution":150}
-}
-
-
 ###
 
 POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
 content-type: application/json
-Accept: image/png
 
 {
     "Device":"{{device}}",
@@ -54,13 +44,6 @@ content-type: application/json
 }
 
 ###
-POST {{protocoll}}://{{host}}:{{port}}/scan HTTP/1.1
-Accept: image/png
-content-type: application/json
-
-{"Device":"genesys:libusb:001:004","Options":{"depth":16,"resolution":300}}
-
-###
 
 GET {{protocoll}}://{{host}}:{{port}}/ HTTP/1.1
 
@@ -71,11 +54,6 @@ GET {{protocoll}}://{{host}}:{{port}}/list HTTP/1.1
 ###
 
 GET {{protocoll}}://{{host}}:{{port}}/last HTTP/1.1
-
-###
-
-GET {{protocoll}}://{{host}}:{{port}}/last HTTP/1.1
-Accept: image/png
 
 ###
 
