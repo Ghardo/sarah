@@ -25,11 +25,14 @@ type ScanRequest struct {
 }
 
 var (
-	lastScanImage []byte
+	lastScanImage  []byte
+	allowedOrigins *string
+	version        = "1.0.2"
 )
 
 func main() {
 	port := flag.Int("port", 7575, "The api listen on this port.")
+	allowedOrigins = flag.String("origin", "http://localhost:8080", " Comma separated list of allowed origin for cors")
 
 	if os.Getenv("SARAHRC") == "" {
 		os.Setenv("SARAHRC", "/etc/sarahrc")
@@ -45,13 +48,16 @@ func main() {
 	defer sane.Exit()
 
 	router := gin.Default()
-	router.Use(cors.Default())
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = strings.Split(*allowedOrigins, ",")
+	router.Use(cors.New(corsConfig))
 
 	router.POST("/scan", scan)
 	router.GET("/", hello)
 	router.GET("/list", list)
 	router.GET("/config", config)
 	router.GET("/image", getScanImage)
+	router.GET("/version", getVersion)
 
 	router.Run(strings.Join([]string{":", strconv.Itoa(*port)}, ""))
 }
@@ -97,7 +103,11 @@ func config(c *gin.Context) {
 }
 
 func hello(c *gin.Context) {
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("Hi, i am sarah. "))
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("Hi, i am sarah. Version: "+version))
+}
+
+func getVersion(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"version": version})
 }
 
 func scan(c *gin.Context) {
