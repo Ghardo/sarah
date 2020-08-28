@@ -27,12 +27,15 @@ type ScanRequest struct {
 var (
 	lastScanImage  []byte
 	allowedOrigins *string
-	version        = "1.0.2"
+	version        = "1.0.3"
 )
 
 func main() {
 	port := flag.Int("port", 7575, "The api listen on this port.")
 	allowedOrigins = flag.String("origin", "http://localhost:8080", " Comma separated list of allowed origin for cors")
+	useTls := flag.Bool("tls", false, "Use tls for this service.")
+	certFile := flag.String("cert", "", "The cert file for tls encryption.")
+	certKeyFile := flag.String("cert-key", "", "The key file for tls cert")
 
 	if os.Getenv("SARAHRC") == "" {
 		os.Setenv("SARAHRC", "/etc/sarahrc")
@@ -59,7 +62,11 @@ func main() {
 	router.GET("/image", getScanImage)
 	router.GET("/version", getVersion)
 
-	router.Run(strings.Join([]string{":", strconv.Itoa(*port)}, ""))
+	if *useTls {
+		router.RunTLS(strings.Join([]string{":", strconv.Itoa(*port)}, ""), *certFile, *certKeyFile)
+	} else {
+		router.Run(strings.Join([]string{":", strconv.Itoa(*port)}, ""))
+	}
 }
 
 func die(v ...interface{}) {
