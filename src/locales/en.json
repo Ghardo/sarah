@@ -1,0 +1,125 @@
+{
+  "_name": "English",
+  "app": {
+    "tabs": {
+      "scan": "Scan",
+      "watchers": "Watchers",
+      "devices": "Devices"
+    },
+    "scanner": "Scanner",
+    "language": "Language",
+    "scanRunning": "Scan in progress",
+    "live": "live",
+    "offline": "offline",
+    "liveOn": "Live connection active",
+    "liveOff": "No live connection",
+    "devicesError": "Could not query scanners: {error}"
+  },
+  "toast": {
+    "buttonNoWatcher": "Button “{button}” pressed – no watcher is set up for it.",
+    "buttonScan": "Button “{button}” pressed – starting scan …",
+    "scanDone": "Scan finished: {file}",
+    "scanFailed": "Scan failed: {error}"
+  },
+  "common": {
+    "refresh": "Refresh",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving …",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "loading": "Loading …",
+    "loadingOptions": "Loading options …",
+    "noDevice": "No scanner selected."
+  },
+  "errors": {
+    "unreachable": "sarah is not reachable"
+  },
+  "options": {
+    "deviceDefault": "Device default",
+    "reset": "Reset to device default",
+    "resetAll": "Reset all to device default",
+    "on": "on",
+    "off": "off",
+    "format": "Size",
+    "paperSize": "Paper size",
+    "max": "Maximum",
+    "general": "General",
+    "showAdvanced": "Show advanced options ({count})"
+  },
+  "file": {
+    "legend": "File",
+    "template": "File name (template)",
+    "placeholders": "Placeholders: {list}",
+    "extension": ".png is appended",
+    "newDocScan": "Start a new document ({doc} +1, {index} back to 1)",
+    "newDocWatcher": "Start a new document with every press"
+  },
+  "scan": {
+    "settings": "Scan settings",
+    "reloadOptions": "Reload options",
+    "result": "Result",
+    "start": "Scan",
+    "scanning": "Scanning … {seconds}s",
+    "buttonScanning": "Scan via button “{button}” in progress …",
+    "failed": "Scan failed: {error}",
+    "buttonFailed": "Scan via button “{button}” failed: {error}",
+    "file": "File",
+    "size": "Size",
+    "trigger": "Triggered by",
+    "triggerButton": "Button “{button}”",
+    "triggerApi": "Web/API",
+    "previewAlt": "Preview of {file}",
+    "noPreview": "No preview available.",
+    "download": "Download PNG",
+    "empty": "No scan yet. Scans started with the buttons on the scanner show up here automatically."
+  },
+  "watchers": {
+    "title": "Watchers",
+    "new": "New watcher",
+    "edit": "Edit watcher",
+    "intro": "A watcher starts a scan as soon as the selected button on the scanner is pressed.",
+    "empty": "No watchers set up yet.",
+    "scanning": "scanning",
+    "active": "active",
+    "inactive": "inactive",
+    "newDoc": "new document",
+    "deleteAll": "Delete all",
+    "confirmDelete": "Delete the watcher for button “{button}”?",
+    "confirmDeleteAll": "Really delete all watchers?",
+    "trigger": "Trigger",
+    "button": "Button",
+    "chooseButton": "Choose a button …",
+    "taken": "taken",
+    "duplicate": "There is already a watcher for this button.",
+    "noButtons": "This device does not report any buttons.",
+    "picked": "Selected by pressing the button on the scanner.",
+    "tip": "Tip: press a free button on the scanner to select it here."
+  },
+  "devices": {
+    "scanners": "Scanners",
+    "rescan": "Search again",
+    "searching": "Searching for scanners …",
+    "none": "No scanners found.",
+    "options": "Options",
+    "onlyActive": "active only",
+    "columns": {
+      "group": "Group",
+      "name": "Name",
+      "title": "Title",
+      "type": "Type",
+      "values": "Values",
+      "notes": "Notes"
+    },
+    "step": "step {step}",
+    "flags": {
+      "inactive": "inactive",
+      "readOnly": "read-only",
+      "advanced": "advanced",
+      "auto": "auto",
+      "emulated": "emulated",
+      "array": "array[{length}]"
+    }
+  }
+}

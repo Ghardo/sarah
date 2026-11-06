@@ -1,0 +1,21 @@
+[tools]
+go = "1.27"
+node = "24"
+pnpm = "10"
+
+[env]
+GOCACHE = "{{config_root}}/.cache"
+
+[tasks.builder]
+description = "Builder-Image für den Pi 4 (arm64) erstellen"
+run = "podman build -t sarah-builder ."
+
+[tasks.ui]
+description = "Web-UI bauen (landet in src/ui/dist und wird ins Binary eingebettet)"
+dir = "{{config_root}}/web"
+run = ["pnpm install --frozen-lockfile", "pnpm build"]
+
+[tasks.build]
+description = "Web-UI und Binary für den Pi 4 bauen (sarah-pi4)"
+depends = ["ui"]
+run = "podman run --rm -v ./:/app:Z sarah-builder sh ./build-pi.sh"

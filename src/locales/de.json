@@ -1,0 +1,125 @@
+{
+  "_name": "Deutsch",
+  "app": {
+    "tabs": {
+      "scan": "Scannen",
+      "watchers": "Watcher",
+      "devices": "Geräte"
+    },
+    "scanner": "Scanner",
+    "language": "Sprache",
+    "scanRunning": "Scan läuft",
+    "live": "live",
+    "offline": "offline",
+    "liveOn": "Live-Verbindung aktiv",
+    "liveOff": "Keine Live-Verbindung",
+    "devicesError": "Scanner konnten nicht abgefragt werden: {error}"
+  },
+  "toast": {
+    "buttonNoWatcher": "Taste „{button}“ gedrückt – dafür ist kein Watcher eingerichtet.",
+    "buttonScan": "Taste „{button}“ gedrückt – Scan startet …",
+    "scanDone": "Scan fertig: {file}",
+    "scanFailed": "Scan fehlgeschlagen: {error}"
+  },
+  "common": {
+    "refresh": "Aktualisieren",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "saving": "Speichere …",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "close": "Schließen",
+    "loading": "Lade …",
+    "loadingOptions": "Lade Optionen …",
+    "noDevice": "Kein Scanner ausgewählt."
+  },
+  "errors": {
+    "unreachable": "sarah ist nicht erreichbar"
+  },
+  "options": {
+    "deviceDefault": "Gerätestandard",
+    "reset": "Auf Gerätestandard zurücksetzen",
+    "resetAll": "Alle auf Gerätestandard",
+    "on": "an",
+    "off": "aus",
+    "format": "Format",
+    "paperSize": "Papierformat",
+    "max": "Maximal",
+    "general": "Allgemein",
+    "showAdvanced": "Erweiterte Optionen anzeigen ({count})"
+  },
+  "file": {
+    "legend": "Datei",
+    "template": "Dateiname (Vorlage)",
+    "placeholders": "Platzhalter: {list}",
+    "extension": "Endung .png wird ergänzt",
+    "newDocScan": "Neues Dokument beginnen ({doc} +1, {index} zurück auf 1)",
+    "newDocWatcher": "Mit jedem Druck ein neues Dokument beginnen"
+  },
+  "scan": {
+    "settings": "Scan-Einstellungen",
+    "reloadOptions": "Optionen neu laden",
+    "result": "Ergebnis",
+    "start": "Scannen",
+    "scanning": "Scanne … {seconds}s",
+    "buttonScanning": "Scan über Taste „{button}“ läuft …",
+    "failed": "Scan fehlgeschlagen: {error}",
+    "buttonFailed": "Scan über Taste „{button}“ fehlgeschlagen: {error}",
+    "file": "Datei",
+    "size": "Größe",
+    "trigger": "Ausgelöst",
+    "triggerButton": "Taste „{button}“",
+    "triggerApi": "Web/API",
+    "previewAlt": "Vorschau von {file}",
+    "noPreview": "Keine Vorschau verfügbar.",
+    "download": "PNG herunterladen",
+    "empty": "Noch kein Scan. Scans über die Tasten am Scanner erscheinen hier automatisch."
+  },
+  "watchers": {
+    "title": "Watcher",
+    "new": "Neuer Watcher",
+    "edit": "Watcher bearbeiten",
+    "intro": "Ein Watcher startet einen Scan, sobald die gewählte Taste am Scanner gedrückt wird.",
+    "empty": "Noch keine Watcher eingerichtet.",
+    "scanning": "scannt",
+    "active": "aktiv",
+    "inactive": "inaktiv",
+    "newDoc": "neues Dokument",
+    "deleteAll": "Alle löschen",
+    "confirmDelete": "Watcher für Taste „{button}“ löschen?",
+    "confirmDeleteAll": "Wirklich alle Watcher löschen?",
+    "trigger": "Auslöser",
+    "button": "Taste",
+    "chooseButton": "Taste wählen …",
+    "taken": "belegt",
+    "duplicate": "Für diese Taste gibt es schon einen Watcher.",
+    "noButtons": "Dieses Gerät meldet keine Tasten.",
+    "picked": "Per Tastendruck am Scanner ausgewählt.",
+    "tip": "Tipp: Eine freie Taste am Scanner drücken, um sie hier auszuwählen."
+  },
+  "devices": {
+    "scanners": "Scanner",
+    "rescan": "Neu suchen",
+    "searching": "Suche Scanner …",
+    "none": "Keine Scanner gefunden.",
+    "options": "Optionen",
+    "onlyActive": "nur aktive",
+    "columns": {
+      "group": "Gruppe",
+      "name": "Name",
+      "title": "Titel",
+      "type": "Typ",
+      "values": "Werte",
+      "notes": "Hinweise"
+    },
+    "step": "Schritt {step}",
+    "flags": {
+      "inactive": "inaktiv",
+      "readOnly": "nur lesbar",
+      "advanced": "erweitert",
+      "auto": "auto",
+      "emulated": "emuliert",
+      "array": "Array[{length}]"
+    }
+  }
+}

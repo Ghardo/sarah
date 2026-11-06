@@ -1,0 +1,183 @@
+# Variabeln für deinen Dienst
+@host = http://raspberrypi.local:7575
+@deviceName = backend:libusb:001:002
+
+###
+# GET: Hello World
+GET {{host}}/
+
+###
+# GET: Version
+GET {{host}}/version
+
+###
+# GET: Geräte auflisten
+# Zeigt alle erkannten Scanner an.
+GET {{host}}/list
+
+###
+# GET: Geräte-Konfiguration abrufen
+# Zeigt alle Optionen für deinen Scanner an (hier findest du die Button-Namen).
+GET {{host}}/config?device={{deviceName}}
+
+# -----------------------------------------------------
+# MANUELLES SCANNEN
+# -----------------------------------------------------
+
+###
+# POST: Manuellen Scan starten (DIN A4)
+# Führt *sofort* einen einzelnen Scan aus.
+POST {{host}}/scan
+Content-Type: application/json
+
+{
+    "Device": "{{deviceName}}",
+    "Options": {
+        "mode": "Color",
+        "resolution": 300,
+        "tl-x": 0.0,
+        "tl-y": 0.0,
+        "br-x": 210.0,
+        "br-y": 297.0
+    }
+}
+
+###
+
+POST {{host}}/scan
+Content-Type: application/json
+
+{
+    "Device": "{{deviceName}}",
+    "Filename": "PreviewScan",
+    "Options": {
+        "mode": "Color",
+        "resolution": 300,
+        "tl-x": 0.0,
+        "tl-y": 0.0,
+        "br-x": 210.0,
+        "br-y": 297.0
+    }
+}
+
+# -----------------------------------------------------
+# HARDWARE-BUTTON WATCHER (NEU)
+# -----------------------------------------------------
+
+###
+# POST: Watcher 1 (DIN A4) starten
+# Beobachtet den "file"-Button. Wenn gedrückt, wird ein DIN A4-Scan ausgelöst.
+POST {{host}}/watch
+Content-Type: application/json
+
+{
+    "Device": "{{deviceName}}",
+    "WatchSensor": "extra",
+    "Options": {
+        "mode": "Color",
+        "resolution": 300,
+        "tl-x": 0.0,
+        "tl-y": 0.0,
+        "br-x": 210.0,
+        "br-y": 297.0
+    }
+}
+
+###
+
+POST {{host}}/watch
+Content-Type: application/json
+
+{
+    "Device": "{{deviceName}}",
+    "Filename": "file_{doc}_{index}_{date}_{time}",
+    "WatchSensor": "file",
+    "NewDoc": true,
+    "Options": {
+        "mode": "Color",
+        "resolution": 300,
+        "tl-x": 0.0,
+        "tl-y": 0.0,
+        "br-x": 210.0,
+        "br-y": 297.0
+    }
+}
+
+
+###
+
+
+POST {{host}}/watch
+Content-Type: application/json
+
+{
+    "Device": "{{deviceName}}",
+    "Filename": "file_{doc}_{index}_{date}_{time}",
+    "WatchSensor": "extra",
+    "NewDoc": false,
+    "Options": {
+        "mode": "Color",
+        "resolution": 300,
+        "tl-x": 0.0,
+        "tl-y": 0.0,
+        "br-x": 210.0,
+        "br-y": 297.0
+    }
+}
+
+###
+# POST: Watcher 2 (DIN A5) starten
+# Beobachtet den "email"-Button (Beispiel). Wenn gedrückt, wird ein DIN A5-Scan ausgelöst.
+# Dieser läuft parallel zu Watcher 1.
+POST {{host}}/watch
+Content-Type: application/json
+
+{
+    "Device": "{{deviceName}}",
+    "WatchSensor": "email",
+    "Options": {
+        "mode": "Gray",
+        "resolution": 150,
+        "tl-x": 0.0,
+        "tl-y": 0.0,
+        "br-x": 148.0,
+        "br-y": 210.0
+    }
+}
+
+###
+# DELETE: EINEN Watcher stoppen
+# Stoppt gezielt den Watcher für den "scan"-Button.
+DELETE {{host}}/watch
+Content-Type: application/json
+
+{
+    "Device": "{{deviceName}}",
+    "WatchSensor": "scan"
+}
+
+###
+
+# GET: Alle aktiven Watcher auflisten
+# Zeigt, welche "Device:Button"-Kombinationen gerade beobachtet werden.
+GET {{host}}/watch/list
+
+
+###
+# DELETE: ALLE Watcher stoppen
+# Stoppt alle laufenden Beobachter auf einmal.
+DELETE {{host}}/watch/all
+
+# -----------------------------------------------------
+# SCANS ABFRAGEN
+# -----------------------------------------------------
+
+###
+# GET: Gescanntes Bild abrufen
+#
+# ANLEITUNG:
+# 1. Führe einen manuellen Scan aus ODER drücke einen Hardware-Button.
+# 2. Kopiere den "filename" aus der JSON-Antwort (z.B. "scan_...png").
+# 3. Füge den Dateinamen hier unten ein.
+@scanFilename = scan_xxxxxxxx_xxxxxx.png
+GET {{host}}/scans/{{scanFilename}}

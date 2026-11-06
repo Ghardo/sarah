@@ -1,0 +1,25 @@
+[Unit]
+Description=Sarah Scanner Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=scanner
+WorkingDirectory=/home/pi/sarah
+ExecStart=/home/pi/sarah/sarah-pi4
+Restart=on-failure
+RestartSec=5
+Environment="SARAH_PORT=7575"
+Environment="SARAH_SCAN_DIR=/home/pi/paperless/consume"
+Environment="SARAH_WATCHER_CONFIG=/home/pi/sarah/watchers.json"
+Environment="SARAH_ALLOWED_ORIGINS="
+Environment="SARAH_USE_TLS=false"
+Environment="SARAH_CERT_FILE="
+Environment="SARAH_KEY_FILE="
+Environment="TZ=UTC"
+Environment="SARAH_POST_SCAN_PROCESS=/home/pi/sarah/post-process.sh"
+
+[Install]
+
+WantedBy=multi-user.target

@@ -1,1 +1,11 @@
+.cache/
+vendor/
+sarah-pi4
+
+src/ui/dist/
+web/node_modules/
+
+# Wiki (separat im Gitea/GitHub-Wiki gepflegt)
+wiki/
+
 .vscode
