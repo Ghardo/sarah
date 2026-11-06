@@ -26,7 +26,7 @@ const values = ref<OptionValues>({})
 const filename = ref('')
 const newDoc = ref(false)
 
-// Einstellungen je Gerät merken
+// Remember settings per device
 watch(
   () => [props.device, props.options] as const,
   ([device, options]) => {
@@ -44,7 +44,7 @@ watch([values, filename, newDoc], () => {
   }
 })
 
-// --- Ergebnis, auch von Scans über die Hardware-Tasten ---
+// --- Result, also from scans via the hardware buttons ---
 
 const result = ref<ScanInfo | null>(null)
 const previewUrl = ref('')
@@ -58,11 +58,11 @@ function showResult(s: ScanInfo) {
 
 if (live.lastCompleted && live.lastCompleted.device === props.device) showResult(live.lastCompleted)
 
-/** Scan, der gerade über eine Taste läuft (der eigene wird über `scanning` angezeigt). */
+/** Scan currently running via a button (our own is shown via `scanning`). */
 const buttonScan = computed(() => live.scanning.find((s) => s.device === props.device && s.source === 'button'))
 const busy = computed(() => live.scanning.some((s) => s.device === props.device))
 
-// --- Scan auslösen ---
+// --- Trigger a scan ---
 
 const scanning = ref(false)
 const error = ref('')
@@ -85,7 +85,7 @@ async function scan() {
       NewDoc: newDoc.value || undefined,
       Options: values.value,
     })
-    // Falls das SSE-Ereignis (noch) nicht da ist, Ergebnis aus der Antwort zeigen
+    // If the SSE event has not arrived (yet), show the result from the response
     if (result.value?.filename !== res.filename) {
       showResult({ ...res, id: 0, device: props.device, source: 'api', started: '' })
     }

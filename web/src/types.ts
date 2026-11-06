@@ -1,4 +1,4 @@
-// Spiegelt die JSON-Ausgabe von github.com/Ghardo/sane (Felder ohne JSON-Tags)
+// Mirrors the JSON output of github.com/Ghardo/sane (fields without JSON tags)
 
 export const OptType = {
   Bool: 0,

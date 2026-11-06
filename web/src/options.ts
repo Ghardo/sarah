@@ -3,18 +3,18 @@ import { OptType, Unit, type OptionValue, type OptionValues, type SaneOption } f
 
 const valueTypes: number[] = [OptType.Bool, OptType.Int, OptType.Fixed, OptType.String]
 
-/** Optionen, die sich für einen Scan sinnvoll setzen lassen. */
+/** Options that make sense to set for a scan. */
 export function isScanOption(o: SaneOption): boolean {
   return (
     o.IsActive &&
     o.IsSettable &&
-    o.Length === 1 && // Arrays (z. B. Gamma-Tabellen) lassen wir weg
+    o.Length === 1 && // arrays (e.g. gamma tables) are left out
     o.Group !== 'Sensors' &&
     valueTypes.includes(o.Type)
   )
 }
 
-/** Hardware-Tasten, die der Watcher überwachen kann (wie in globalWatcherLoop). */
+/** Hardware buttons the watcher can watch (as in globalWatcherLoop). */
 export function sensorOptions(opts: SaneOption[]): SaneOption[] {
   return opts.filter(
     (o) =>
@@ -79,11 +79,11 @@ function allows(o: SaneOption, v: OptionValue): boolean {
   return true
 }
 
-// --- Papierformate (Scanbereich in mm) ---
+// --- Paper sizes (scan area in mm) ---
 
 export interface PaperSize {
   id: string
-  /** fester Name oder Übersetzungsschlüssel (labelKey) */
+  /** fixed name or translation key (labelKey) */
   label?: string
   labelKey?: string
   width: number
@@ -138,7 +138,7 @@ export function matchingPaper(opts: SaneOption[], values: OptionValues): string 
   return null
 }
 
-/** Vorschlag für einen neuen Scan/Watcher: Farbe, 300 dpi, A4 – soweit das Gerät es kann. */
+/** Defaults for a new scan/watcher: color, 300 dpi, A4 – as far as the device supports it. */
 export function suggestedValues(opts: SaneOption[]): OptionValues {
   const v: OptionValues = {}
   const byName = new Map(opts.filter(isScanOption).map((o) => [o.Name, o]))

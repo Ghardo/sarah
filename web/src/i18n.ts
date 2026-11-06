@@ -1,11 +1,11 @@
 import { reactive, ref } from 'vue'
 import { load, save } from './storage'
-// Englisch ist fest eingebaut: Fallback für fehlende Schlüssel und falls sarah nicht antwortet
+// English is built in: fallback for missing keys and in case sarah does not respond
 import en from '../../src/locales/en.json'
 
-// Sprachen kommen zur Laufzeit von sarah (GET /i18n, GET /i18n/:code): eingebaute
-// aus src/locales/ plus Dateien aus SARAH_LOCALES_DIR auf dem Server. Eine neue
-// Sprache braucht also nur eine neue Datei dort – kein Neubau.
+// Languages come from sarah at runtime (GET /i18n, GET /i18n/:code): built-in ones
+// from src/locales/ plus files from SARAH_LOCALES_DIR on the server. A new
+// language therefore only needs a new file there – no rebuild.
 
 type Messages = { [key: string]: string | Messages }
 
@@ -41,7 +41,7 @@ async function loadCatalog(code: string): Promise<boolean> {
     catalogs[code] = await fetchJson<Messages>(`/i18n/${encodeURIComponent(code)}`)
     return true
   } catch {
-    return code === fallbackCode // Englisch ist zur Not eingebaut
+    return code === fallbackCode // English is built in as a last resort
   }
 }
 
@@ -50,7 +50,7 @@ function apply(code: string) {
   document.documentElement.lang = code
 }
 
-/** Wechselt die Sprache und merkt sie sich. */
+/** Switches the language and remembers it. */
 export async function setLocale(code: string): Promise<void> {
   if (await loadCatalog(code)) {
     apply(code)
@@ -58,13 +58,13 @@ export async function setLocale(code: string): Promise<void> {
   }
 }
 
-/** Lädt die verfügbaren Sprachen und die passende Sprache (gespeichert oder vom Browser). */
+/** Loads the available languages and the matching language (saved or from the browser). */
 export async function initI18n(): Promise<void> {
   try {
     const list = await fetchJson<LocaleInfo[]>('/i18n')
     if (Array.isArray(list) && list.length) locales.value = list
   } catch {
-    // ohne Server-Liste bleibt Englisch
+    // without a server list, English stays
   }
 
   const candidates = [load<string | null>('locale', null), ...(navigator.languages ?? [navigator.language])]
@@ -75,7 +75,7 @@ export async function initI18n(): Promise<void> {
       break
     }
   }
-  // aktuelle englische Texte vom Server (überschreibt die eingebauten, falls angepasst)
+  // current English texts from the server (override the built-in ones if customized)
   if (locale.value !== fallbackCode) loadCatalog(fallbackCode)
 }
 
@@ -89,8 +89,8 @@ function lookup(messages: Messages | undefined, key: string): string | undefined
 }
 
 /**
- * Übersetzt einen Schlüssel wie "scan.title". Parameter ersetzen {name} im Text;
- * Platzhalter ohne passenden Parameter bleiben stehen (z. B. {doc} in Hilfetexten).
+ * Translates a key like "scan.title". Parameters replace {name} in the text;
+ * placeholders without a matching parameter stay as they are (e.g. {doc} in help texts).
  */
 export function t(key: string, params?: Record<string, string | number>): string {
   const text = lookup(catalogs[locale.value], key) ?? lookup(catalogs[fallbackCode], key) ?? lookup(en, key) ?? key

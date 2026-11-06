@@ -1,2 +1,2 @@
-Hier landet das gebaute Web-UI (`dist/`), erzeugt mit `pnpm build` im Verzeichnis `web/`.
-Der Inhalt wird per `go:embed` ins Binary eingebettet. `dist/` ist nicht versioniert.
+The built web UI (`dist/`) ends up here, created with `pnpm build` in the `web/` directory.
+The contents are embedded into the binary via `go:embed`. `dist/` is not versioned.

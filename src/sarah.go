@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
-	// "context" // ENTFERNT
-	"encoding/json" // Nötig für die JSON-Speicherung
+	// "context" // removed
+	"encoding/json" // needed for JSON storage
 	"errors"
 	"fmt"
 	"image"
@@ -11,9 +11,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec" // Nötig für SARAH_POST_SCAN_PROCESS
+	"os/exec" // needed for SARAH_POST_SCAN_PROCESS
 	"path/filepath"
-	"strconv" // NEU: Nötig für Zähler-Umwandlung
+	"strconv" // needed for counter conversion
 	"strings"
 	"sync"
 	"time"
@@ -26,7 +26,7 @@ import (
 type ScanRequest struct {
 	Device      string         `json:"Device"`
 	WatchSensor string         `json:"WatchSensor,omitempty"`
-	Filename    string         `json:"Filename,omitempty"` // Wird jetzt als Template verwendet
+	Filename    string         `json:"Filename,omitempty"` // used as a template
 	NewDoc      bool           `json:"NewDoc,omitempty"`
 	Options     map[string]any `json:"Options"`
 }
@@ -38,35 +38,35 @@ type Config struct {
 	CertFile       string
 	KeyFile        string
 	ScanDir        string
-	// Pfad zur Speicherdatei für die Watcher
+	// Path to the file storing the watchers
 	WatcherConfigPath string
-	// Web-UI unter /ui/ ausliefern (SARAH_UI_ENABLED, Standard: true)
+	// Serve the web UI at /ui/ (SARAH_UI_ENABLED, default: true)
 	UIEnabled bool
-	// Zusätzliche Sprachdateien fürs Web-UI (SARAH_LOCALES_DIR, Standard: ./locales)
+	// Additional language files for the web UI (SARAH_LOCALES_DIR, default: ./locales)
 	LocalesDir string
 }
 
 var (
 	watcherMutex sync.Mutex
-	// Diese Map enthält nur die *laufenden* Watcher
+	// This map only contains the *running* watchers
 	activeWatchers = make(map[string]ScanRequest)
-	// Hält den Pfad zur Konfigurationsdatei
-	watcherConfigFile = "watchers.json" // Standardname
+	// Holds the path to the configuration file
+	watcherConfigFile = "watchers.json" // default name
 
-	// Globale Sperre für alle SANE-Gerätezugriffe
+	// Global lock for all SANE device access
 	saneDeviceMutex sync.Mutex
 
-	// Globaler Scan-Zähler (nicht persistent) und zugehörige Sperre
+	// Global scan counter (not persisted) and its lock
 	scanCounter  int
 	docCounter   int
 	counterMutex sync.Mutex
 
-	// Map für offene Verbindungen des Watchers (Global, damit doScan sie schließen kann)
+	// Map of open watcher connections (global so that doScan can close them)
 	watcherConnMutex sync.Mutex
 	watcherConns     = make(map[string]*sane.Conn)
 )
 
-const version = "2.5.0-template-filename" // NEUE VERSION
+const version = "2.5.0-template-filename" // version
 
 func main() {
 	cfg, err := loadConfig()
@@ -88,10 +88,10 @@ func main() {
 	}
 	defer sane.Exit()
 
-	// Lade gespeicherte Watcher
+	// Load saved watchers
 	initializePersistentWatchers(cfg.ScanDir)
 
-	// Starte die EINE globale Watcher-Schleife
+	// Start the ONE global watcher loop
 	go globalWatcherLoop(cfg.ScanDir)
 
 	router := gin.Default()
@@ -136,7 +136,7 @@ func main() {
 	}
 }
 
-// --- Watcher-Funktionen ---
+// --- Watcher functions ---
 
 func initializePersistentWatchers(scanDir string) {
 	time.Sleep(5 * time.Second)
@@ -259,20 +259,20 @@ func stopAllWatchers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "All active watchers stopped and configuration file cleared."})
 }
 
-// globalWatcherLoop: Diese EINE Goroutine pollt alle aktiven Watcher nacheinander.
+// globalWatcherLoop: this ONE goroutine polls all active watchers one after another.
 func globalWatcherLoop(scanDir string) {
 	postScanScript := os.Getenv("SARAH_POST_SCAN_PROCESS")
 	cooldowns := make(map[string]time.Time)
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
 
-	// Cooldown für Geräte, damit der Scan-Prozess Zeit hat, den Zugriff zu übernehmen
+	// Cooldown for devices so the scan process has time to take over access
 	deviceCooldowns := make(map[string]time.Time)
 
-	// Cache für Sensor-Optionen, um conn.Options() nicht in jedem Loop aufzurufen
+	// Cache for sensor options so conn.Options() is not called on every loop
 	deviceSensors := make(map[string][]sane.Option)
 
-	// Einmaliges Discovery beim Start, da sich die Geräte laut User nicht ändern
+	// Discover devices once at startup, since the devices do not change
 	var knownDevices []string
 	saneDeviceMutex.Lock()
 	if devs, err := sane.Devices(); err == nil {
@@ -291,7 +291,7 @@ func globalWatcherLoop(scanDir string) {
 		<-ticker.C
 
 		watcherMutex.Lock()
-		// Snapshot der aktiven Watcher und Identifikation der zu pollenden Geräte
+		// Snapshot of the active watchers and the devices to poll
 		currentWatchers := make(map[string]ScanRequest)
 		devicesToPoll := make(map[string]bool)
 		for key, req := range activeWatchers {
@@ -300,7 +300,7 @@ func globalWatcherLoop(scanDir string) {
 		}
 		watcherMutex.Unlock()
 
-		// Füge automatisch erkannte Geräte hinzu, damit Button-Events auch ohne Watcher geloggt werden
+		// Add automatically discovered devices so button events are logged even without a watcher
 		for _, dev := range knownDevices {
 			devicesToPoll[dev] = true
 		}
@@ -314,7 +314,7 @@ func globalWatcherLoop(scanDir string) {
 				continue
 			}
 
-			// Sperr-Reihenfolge überall: saneDeviceMutex -> watcherConnMutex
+			// Lock order everywhere: saneDeviceMutex -> watcherConnMutex
 			saneDeviceMutex.Lock()
 
 			conn := currentWatcherConn(device)
@@ -328,7 +328,7 @@ func globalWatcherLoop(scanDir string) {
 					continue
 				}
 
-				// Optionen einmalig abrufen und cachen
+				// Fetch options once and cache them
 				rawOpts := c.Options()
 				var cached []sane.Option
 				for _, opt := range rawOpts {
@@ -346,15 +346,15 @@ func globalWatcherLoop(scanDir string) {
 				watcherConnMutex.Unlock()
 			}
 
-			// Verwende gecachte Optionen statt jedes Mal conn.Options() aufzurufen
+			// Use cached options instead of calling conn.Options() every time
 			opts := deviceSensors[device]
 			var eventDetected bool
 			var pressedButton string
 			var errorCount int
 
 			for _, opt := range opts {
-				// Strategie-Wechsel: Wir prüfen nur Optionen in der Gruppe "Sensors".
-				// Das ist zuverlässiger als Namens-Heuristiken, da SANE-Buttons dort liegen.
+				// Only options in the "Sensors" group are checked.
+				// This is more reliable than name heuristics, since SANE buttons live there.
 				if opt.Group != "Sensors" {
 					continue
 				}
@@ -372,15 +372,15 @@ func globalWatcherLoop(scanDir string) {
 
 				val, err := conn.GetOption(opt.Name)
 				if err != nil {
-					// Manche Treiber werfen "invalid argument" für Sensoren, die gerade nicht bereit sind.
-					// Das ist kein Verbindungsabbruch, also ignorieren wir es stillschweigend, um Log-Spam zu vermeiden.
+					// Some drivers return "invalid argument" for sensors that are not ready.
+					// That is not a lost connection, so it is ignored silently to avoid log spam.
 					if strings.Contains(err.Error(), "invalid argument") {
 						continue
 					}
 
-					// Logge den Fehler, aber brich nicht sofort ab.
-					// Das ist der entscheidende Punkt: Wenn eine andere Sensor-Option vor 'extra' einen Fehler wirft,
-					// würde ein 'break' hier verhindern, dass 'extra' jemals geprüft wird.
+					// Log the error, but do not stop right away.
+					// This is the crucial point: if another sensor option before 'extra' returns an error,
+					// a 'break' here would prevent 'extra' from ever being checked.
 					log.Printf("Watcher: Could not get option '%s' on device '%s': %v. Skipping this option.", opt.Name, device, err)
 
 					errorCount++
@@ -393,7 +393,7 @@ func globalWatcherLoop(scanDir string) {
 					}
 					continue
 				}
-				errorCount = 0 // Reset bei Erfolg
+				errorCount = 0 // reset on success
 
 				var pressed bool
 				if isBool {
@@ -425,8 +425,8 @@ func globalWatcherLoop(scanDir string) {
 				events.publish("button-pressed", gin.H{"device": device, "sensor": pressedButton, "watcher": exists})
 
 				if exists {
-					// Verbindung schließen, damit der Scan-Prozess exklusiven Zugriff hat
-					// (doScan kann sie inzwischen schon geschlossen haben)
+					// Close the connection so the scan process gets exclusive access
+					// (doScan may already have closed it)
 					saneDeviceMutex.Lock()
 					if takeWatcherConn(device) == conn {
 						conn.Close()
@@ -437,7 +437,7 @@ func globalWatcherLoop(scanDir string) {
 					log.Printf("Executing scan for watcher: %s", watcherKey)
 					go executeWatchedScan(req, scanDir, postScanScript, watcherKey)
 				} else {
-					// Nur loggen, Verbindung offen lassen!
+					// Only log, keep the connection open!
 					cooldowns[watcherKey] = time.Now().Add(1 * time.Second)
 					log.Printf("No watcher configured for button '%s' on device '%s'", pressedButton, device)
 				}
@@ -446,7 +446,7 @@ func globalWatcherLoop(scanDir string) {
 	}
 }
 
-// executeWatchedScan: Scan-Logik, die als Goroutine gestartet wird.
+// executeWatchedScan: scan logic started as a goroutine.
 func executeWatchedScan(sr ScanRequest, scanDir string, postScanScript string, watcherKey string) {
 	scan := beginScan(sr.Device, "button", sr.WatchSensor)
 
@@ -460,7 +460,7 @@ func executeWatchedScan(sr ScanRequest, scanDir string, postScanScript string, w
 	log.Printf("Watcher (%s): scan completed", watcherKey)
 
 	go func() {
-		// Dateinamen-Logik
+		// File name logic
 		filename := generateFilename(sr)
 		filePath := filepath.Join(scanDir, filename)
 
@@ -513,7 +513,7 @@ func listWatchers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"active_watchers": responseList})
 }
 
-// --- Hilfsfunktionen für JSON-Speicherung ---
+// --- Helpers for JSON storage ---
 
 func loadWatchersFromFile() (map[string]ScanRequest, error) {
 	configs := make(map[string]ScanRequest)
@@ -554,7 +554,7 @@ func saveWatchersToFile(configs map[string]ScanRequest) error {
 	return os.WriteFile(watcherConfigFile, data, 0644)
 }
 
-// --- Post-Processing-Funktion ---
+// --- Post-processing ---
 func executePostScanScript(scriptPath string, scanDir string, filename string) {
 	log.Printf("Starting post-scan script execution: %s", scriptPath)
 
@@ -577,10 +577,10 @@ func executePostScanScript(scriptPath string, scanDir string, filename string) {
 	}
 }
 
-// --- KORRIGIERT: Zentrale Funktion zur Dateinamenerstellung ---
-// generateFilename behandelt filenameTemplate als Vorlage und ersetzt Platzhalter.
+// --- Central function for building file names ---
+// generateFilename treats filenameTemplate as a template and replaces placeholders.
 func generateFilename(sr ScanRequest) string {
-	// 1. Hole die dynamischen Werte
+	// 1. Get the dynamic values
 	counterMutex.Lock()
 	if sr.NewDoc {
 		docCounter++
@@ -600,10 +600,10 @@ func generateFilename(sr ScanRequest) string {
 	dateStr := now.Format("20060102")
 	timeStr := now.Format("150405")
 
-	// 2. Bestimme die Basisschablone
+	// 2. Determine the base template
 	var baseTemplate string
 	if sr.Filename != "" {
-		baseTemplate = filepath.Base(sr.Filename) // Verhindert Path Traversal
+		baseTemplate = filepath.Base(sr.Filename) // prevents path traversal
 		if baseTemplate == "." || baseTemplate == "" {
 			baseTemplate = "scan_{index}_{date}_{time}" // Fallback
 		}
@@ -611,25 +611,25 @@ func generateFilename(sr ScanRequest) string {
 		baseTemplate = "scan_{index}_{date}_{time}" // Default
 	}
 
-	// 3. Entferne .png, falls vorhanden (wird am Ende sicher hinzugefügt)
+	// 3. Remove .png if present (it is always appended at the end)
 	if strings.HasSuffix(strings.ToLower(baseTemplate), ".png") {
 		baseTemplate = baseTemplate[:len(baseTemplate)-4]
 	}
 
-	// 4. Führe die Ersetzungen durch
+	// 4. Replace the placeholders
 	result := strings.ReplaceAll(baseTemplate, "{index}", indexStr)
 	result = strings.ReplaceAll(result, "{date}", dateStr)
 	result = strings.ReplaceAll(result, "{time}", timeStr)
 	result = strings.ReplaceAll(result, "{doc}", docStr)
 
-	// 5. Stelle sicher, dass die Datei mit .png endet
+	// 5. Make sure the file ends with .png
 	return result + ".png"
 }
 
-// --- Restlicher Code ---
+// --- HTTP handlers ---
 
 func hello(c *gin.Context) {
-	// Browser landen bei aktivem Web-UI direkt dort, API-Clients bekommen weiter den Text.
+	// With the web UI enabled, browsers land there directly; API clients still get the text.
 	if uiActive && strings.Contains(c.GetHeader("Accept"), "text/html") {
 		c.Redirect(http.StatusFound, uiPrefix+"/")
 		return
@@ -649,8 +649,8 @@ func getDeviceConfig(c *gin.Context) {
 	saneDeviceMutex.Lock()
 	defer saneDeviceMutex.Unlock()
 
-	// Hält der Watcher das Gerät offen, scheitert ein zweites Open mit "device busy".
-	// Dann einfach die Optionen der bestehenden Verbindung liefern.
+	// If the watcher holds the device open, a second open fails with "device busy".
+	// In that case simply return the options of the existing connection.
 	if conn := currentWatcherConn(device); conn != nil {
 		c.JSON(http.StatusOK, conn.Options())
 		return
@@ -699,10 +699,9 @@ func scanHandler(scanDir string) gin.HandlerFunc {
 			return
 		}
 
-		// --- GEÄNDERT: Neue Template-Logik verwenden ---
+		// --- Use the template logic ---
 		filename := generateFilename(sr)
 		filePath := filepath.Join(scanDir, filename)
-		// --- ENDE ÄNDERUNG ---
 
 		if err := os.WriteFile(filePath, imgBytes, 0644); err != nil {
 			log.Printf("ERROR: Failed to save scan to disk %s: %v", filePath, err)
@@ -799,9 +798,9 @@ func doScan(sr ScanRequest) ([]byte, error) {
 	saneDeviceMutex.Lock()
 	defer saneDeviceMutex.Unlock()
 
-	// Falls der Watcher das Gerät offen hält, schließen wir es hier erzwungen.
-	// Das passiert unter demselben Lock wie das Öffnen, damit der Watcher
-	// das Gerät nicht zwischendurch wieder belegt.
+	// If the watcher holds the device open, it is forcibly closed here.
+	// This happens under the same lock as opening, so the watcher
+	// cannot grab the device again in between.
 	if conn := takeWatcherConn(sr.Device); conn != nil {
 		conn.Close()
 	}
@@ -851,16 +850,16 @@ func openDevice(name string) (*sane.Conn, error) {
 	return sane.Open(name)
 }
 
-// currentWatcherConn liefert die offene Watcher-Verbindung eines Geräts (oder nil).
-// Aufrufer muss saneDeviceMutex halten, damit die Verbindung nicht parallel geschlossen wird.
+// currentWatcherConn returns the open watcher connection of a device (or nil).
+// The caller must hold saneDeviceMutex so the connection is not closed concurrently.
 func currentWatcherConn(device string) *sane.Conn {
 	watcherConnMutex.Lock()
 	defer watcherConnMutex.Unlock()
 	return watcherConns[device]
 }
 
-// takeWatcherConn entfernt die Watcher-Verbindung eines Geräts aus der Map und gibt sie zurück (oder nil).
-// Aufrufer muss saneDeviceMutex halten und ist danach fürs Schließen zuständig.
+// takeWatcherConn removes the watcher connection of a device from the map and returns it (or nil).
+// The caller must hold saneDeviceMutex and is responsible for closing it afterwards.
 func takeWatcherConn(device string) *sane.Conn {
 	watcherConnMutex.Lock()
 	defer watcherConnMutex.Unlock()

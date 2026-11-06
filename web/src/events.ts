@@ -21,7 +21,7 @@ export interface ButtonPress {
 
 type Listener<T> = (data: T) => void
 
-/** Live-Zustand aus GET /events (Server-Sent Events). */
+/** Live state from GET /events (Server-Sent Events). */
 export const live = reactive({
   connected: false,
   scanning: [] as ScanInfo[],
@@ -36,7 +36,7 @@ const listeners = {
   watchers: new Set<Listener<void>>(),
 }
 
-/** Meldet sich für ein Ereignis an, gibt eine Abmeldefunktion zurück. */
+/** Subscribes to an event, returns an unsubscribe function. */
 export function onLive(kind: 'completed' | 'failed', fn: Listener<ScanInfo>): () => void
 export function onLive(kind: 'button', fn: Listener<ButtonPress>): () => void
 export function onLive(kind: 'watchers', fn: () => void): () => void
@@ -59,7 +59,7 @@ export function connectEvents(): void {
   source = new EventSource('/events')
 
   source.onopen = () => (live.connected = true)
-  // EventSource verbindet sich selbstständig neu
+  // EventSource reconnects on its own
   source.onerror = () => (live.connected = false)
 
   const on = <T>(name: string, fn: (data: T) => void) =>
@@ -67,7 +67,7 @@ export function connectEvents(): void {
       try {
         fn(JSON.parse((e as MessageEvent<string>).data) as T)
       } catch {
-        // unbekanntes Format ignorieren
+        // ignore unknown format
       }
     })
 

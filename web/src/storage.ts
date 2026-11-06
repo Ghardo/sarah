@@ -1,4 +1,4 @@
-// localStorage kann in privaten Fenstern o. Ä. fehlen oder werfen – dann einfach ohne merken.
+// localStorage may be missing or throw in private windows etc. – then just do not remember.
 
 const prefix = 'sarah:'
 
@@ -15,6 +15,6 @@ export function save(key: string, value: unknown): void {
   try {
     localStorage.setItem(prefix + key, JSON.stringify(value))
   } catch {
-    // ignorieren
+    // ignore
   }
 }

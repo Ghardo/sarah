@@ -15,16 +15,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Sprachdateien für das Web-UI.
+// Language files for the web UI.
 //
-// Eingebaut sind die Dateien aus src/locales/. Zusätzlich werden Dateien aus
-// SARAH_LOCALES_DIR (Standard: ./locales) gelesen – bei jedem Aufruf, also
-// ohne Neubau und ohne Neustart. Gleichnamige Dateien dort ersetzen die
-// eingebauten. Der Dateiname ist der Sprachcode (de.json, pt-BR.json),
-// "_name" in der Datei der Anzeigename.
+// The files from src/locales/ are built in. In addition, files from
+// SARAH_LOCALES_DIR (default: ./locales) are read on every request, so
+// without rebuilding and without restarting. Files there with the same name
+// replace the built-in ones. The file name is the language code (de.json, pt-BR.json),
+// "_name" in the file is the display name.
 //
 //   GET /i18n         -> [{"code":"de","name":"Deutsch"}, ...]
-//   GET /i18n/:code   -> Inhalt der Sprachdatei
+//   GET /i18n/:code   -> contents of the language file
 
 //go:embed locales/*.json
 var builtinLocales embed.FS
@@ -62,7 +62,7 @@ func registerLocales(router *gin.Engine, dir string) {
 	})
 }
 
-// readLocale liefert die Sprachdatei, bevorzugt aus dem Verzeichnis.
+// readLocale returns the language file, preferring the directory.
 func readLocale(dir, code string) ([]byte, error) {
 	if dir != "" {
 		if data, err := os.ReadFile(filepath.Join(dir, code+".json")); err == nil {

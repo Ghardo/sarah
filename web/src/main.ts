@@ -3,5 +3,5 @@ import App from './App.vue'
 import { initI18n } from './i18n'
 import './style.css'
 
-// Sprache vor dem ersten Rendern laden, damit nichts kurz auf Englisch aufblitzt
+// Load the language before the first render so nothing flashes in English
 initI18n().finally(() => createApp(App).mount('#app'))

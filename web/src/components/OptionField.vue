@@ -32,7 +32,7 @@ const outOfRange = computed(() => {
   return typeof v === 'number' && r !== null && (v < r.Min || v > r.Max)
 })
 
-// <select> arbeitet mit Strings, daher über den Index des Constraint-Sets
+// <select> works with strings, so the index into the constraint set is used
 const setIndex = computed(() => {
   const set = props.option.ConstrSet ?? []
   const i = set.findIndex((x) => x === props.modelValue)

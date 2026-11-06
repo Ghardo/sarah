@@ -11,20 +11,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Das gebaute Vue-Frontend (web/ -> pnpm build) landet in src/ui/dist.
-// "all:ui" bettet auch den Platzhalter ein, damit der Go-Build ohne
-// gebautes Frontend nicht fehlschlägt.
+// The built Vue frontend (web/ -> pnpm build) ends up in src/ui/dist.
+// "all:ui" also embeds the placeholder so the Go build does not fail
+// without a built frontend.
 //
 //go:embed all:ui
 var uiFiles embed.FS
 
 const uiPrefix = "/ui"
 
-// uiActive ist true, wenn das Web-UI ausgeliefert wird.
+// uiActive is true when the web UI is served.
 var uiActive bool
 
-// registerUI hängt das Web-UI unter /ui/ ein. Gibt false zurück, wenn kein
-// gebautes Frontend eingebettet ist.
+// registerUI mounts the web UI at /ui/. Returns false if no built
+// frontend is embedded.
 func registerUI(router *gin.Engine) bool {
 	dist, err := fs.Sub(uiFiles, "ui/dist")
 	if err != nil {
@@ -44,7 +44,7 @@ func registerUI(router *gin.Engine) bool {
 		if p != "" && p != "index.html" {
 			if st, err := fs.Stat(dist, p); err == nil && !st.IsDir() {
 				if strings.HasPrefix(p, "assets/") {
-					// Vite versieht Assets mit Hash im Namen
+					// Vite puts a hash into asset names
 					c.Header("Cache-Control", "public, max-age=31536000, immutable")
 				}
 				fileServer.ServeHTTP(c.Writer, c.Request)
@@ -59,10 +59,10 @@ func registerUI(router *gin.Engine) bool {
 	return true
 }
 
-// --- Vorschau des letzten Scans ---
+// --- Preview of the last scan ---
 //
-// Das Post-Scan-Skript verschiebt bzw. löscht die PNG oft sofort, daher hält
-// der Dienst den letzten Scan zusätzlich im Speicher.
+// The post-scan script often moves or deletes the PNG right away, so the
+// service additionally keeps the last scan in memory.
 
 var (
 	lastScanMutex sync.Mutex

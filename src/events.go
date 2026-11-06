@@ -14,14 +14,14 @@ import (
 
 // --- Server-Sent Events (GET /events) ---
 //
-// Ereignisse:
-//   hello            beim Verbinden: {version, scanning: [scanInfo]}
+// Events:
+//   hello            on connect: {version, scanning: [scanInfo]}
 //   scan-started     scanInfo
-//   scan-completed   scanInfo (mit filename, width, height)
-//   scan-failed      scanInfo (mit error)
-//   button-pressed   {device, sensor, watcher}  watcher = ob ein Watcher dafür existiert
+//   scan-completed   scanInfo (with filename, width, height)
+//   scan-failed      scanInfo (with error)
+//   button-pressed   {device, sensor, watcher}  watcher = whether a watcher exists for it
 //   watchers-changed {}
-//   ping             alle 25 s, hält Proxies/Browser bei Laune
+//   ping             every 25 s, keeps proxies/browsers happy
 
 type serverEvent struct {
 	name string
@@ -49,8 +49,8 @@ func (b *eventBroker) unsubscribe(ch chan serverEvent) {
 	b.mu.Unlock()
 }
 
-// publish verschickt ein Ereignis an alle Clients. Hängt ein Client hinterher,
-// wird das Ereignis für ihn verworfen, statt den Scanner-Loop zu blockieren.
+// publish sends an event to all clients. If a client falls behind,
+// the event is dropped for it instead of blocking the scanner loop.
 func (b *eventBroker) publish(name string, data any) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -67,7 +67,7 @@ func eventsHandler(c *gin.Context) {
 	defer events.unsubscribe(ch)
 
 	c.Header("Cache-Control", "no-cache")
-	c.Header("X-Accel-Buffering", "no") // nginx: nicht puffern
+	c.Header("X-Accel-Buffering", "no") // nginx: do not buffer
 	c.Status(http.StatusOK)
 	c.SSEvent("hello", gin.H{"version": version, "scanning": runningScans()})
 	c.Writer.Flush()
@@ -89,12 +89,12 @@ func eventsHandler(c *gin.Context) {
 	})
 }
 
-// --- Laufende Scans ---
+// --- Running scans ---
 
 type scanInfo struct {
 	ID       int64     `json:"id"`
 	Device   string    `json:"device"`
-	Source   string    `json:"source"` // "api" oder "button"
+	Source   string    `json:"source"` // "api" or "button"
 	Sensor   string    `json:"sensor,omitempty"`
 	Started  time.Time `json:"started"`
 	Filename string    `json:"filename,omitempty"`
@@ -109,7 +109,7 @@ var (
 	scansOpen  = make(map[int64]scanInfo)
 )
 
-// beginScan meldet einen Scan als laufend an und verschickt scan-started.
+// beginScan registers a scan as running and sends scan-started.
 func beginScan(device, source, sensor string) *scanInfo {
 	scansMutex.Lock()
 	scansNext++

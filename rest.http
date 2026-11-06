@@ -1,4 +1,4 @@
-# Variabeln für deinen Dienst
+# Variables for your service
 @host = http://raspberrypi.local:7575
 @deviceName = backend:libusb:001:002
 
@@ -11,22 +11,22 @@ GET {{host}}/
 GET {{host}}/version
 
 ###
-# GET: Geräte auflisten
-# Zeigt alle erkannten Scanner an.
+# GET: List devices
+# Shows all detected scanners.
 GET {{host}}/list
 
 ###
-# GET: Geräte-Konfiguration abrufen
-# Zeigt alle Optionen für deinen Scanner an (hier findest du die Button-Namen).
+# GET: Fetch device configuration
+# Shows all options of your scanner (this is where you find the button names).
 GET {{host}}/config?device={{deviceName}}
 
 # -----------------------------------------------------
-# MANUELLES SCANNEN
+# MANUAL SCANNING
 # -----------------------------------------------------
 
 ###
-# POST: Manuellen Scan starten (DIN A4)
-# Führt *sofort* einen einzelnen Scan aus.
+# POST: Start a manual scan (A4)
+# Runs a single scan *immediately*.
 POST {{host}}/scan
 Content-Type: application/json
 
@@ -61,12 +61,12 @@ Content-Type: application/json
 }
 
 # -----------------------------------------------------
-# HARDWARE-BUTTON WATCHER (NEU)
+# HARDWARE BUTTON WATCHERS
 # -----------------------------------------------------
 
 ###
-# POST: Watcher 1 (DIN A4) starten
-# Beobachtet den "file"-Button. Wenn gedrückt, wird ein DIN A4-Scan ausgelöst.
+# POST: Start watcher 1 (A4)
+# Watches the "extra" button. When pressed, an A4 scan is triggered.
 POST {{host}}/watch
 Content-Type: application/json
 
@@ -126,9 +126,9 @@ Content-Type: application/json
 }
 
 ###
-# POST: Watcher 2 (DIN A5) starten
-# Beobachtet den "email"-Button (Beispiel). Wenn gedrückt, wird ein DIN A5-Scan ausgelöst.
-# Dieser läuft parallel zu Watcher 1.
+# POST: Start watcher 2 (A5)
+# Watches the "email" button (example). When pressed, an A5 scan is triggered.
+# This one runs in parallel to watcher 1.
 POST {{host}}/watch
 Content-Type: application/json
 
@@ -146,8 +146,8 @@ Content-Type: application/json
 }
 
 ###
-# DELETE: EINEN Watcher stoppen
-# Stoppt gezielt den Watcher für den "scan"-Button.
+# DELETE: Stop ONE watcher
+# Stops only the watcher for the "scan" button.
 DELETE {{host}}/watch
 Content-Type: application/json
 
@@ -158,26 +158,26 @@ Content-Type: application/json
 
 ###
 
-# GET: Alle aktiven Watcher auflisten
-# Zeigt, welche "Device:Button"-Kombinationen gerade beobachtet werden.
+# GET: List all active watchers
+# Shows which "Device:Button" combinations are currently watched.
 GET {{host}}/watch/list
 
 
 ###
-# DELETE: ALLE Watcher stoppen
-# Stoppt alle laufenden Beobachter auf einmal.
+# DELETE: Stop ALL watchers
+# Stops all running watchers at once.
 DELETE {{host}}/watch/all
 
 # -----------------------------------------------------
-# SCANS ABFRAGEN
+# FETCHING SCANS
 # -----------------------------------------------------
 
 ###
-# GET: Gescanntes Bild abrufen
+# GET: Fetch a scanned image
 #
-# ANLEITUNG:
-# 1. Führe einen manuellen Scan aus ODER drücke einen Hardware-Button.
-# 2. Kopiere den "filename" aus der JSON-Antwort (z.B. "scan_...png").
-# 3. Füge den Dateinamen hier unten ein.
+# HOW TO:
+# 1. Run a manual scan OR press a hardware button.
+# 2. Copy the "filename" from the JSON response (e.g. "scan_...png").
+# 3. Paste the file name below.
 @scanFilename = scan_xxxxxxxx_xxxxxx.png
 GET {{host}}/scans/{{scanFilename}}

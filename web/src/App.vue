@@ -9,7 +9,7 @@ import { locale, locales, setLocale, t } from './i18n'
 import { load, save } from './storage'
 import type { Device, SaneOption } from './types'
 
-// --- Tabs (im URL-Hash, damit Reload/Lesezeichen funktionieren) ---
+// --- Tabs (in the URL hash so reloads/bookmarks work) ---
 
 const tabs = ['scan', 'watchers', 'devices'] as const
 type Tab = (typeof tabs)[number]
@@ -22,7 +22,7 @@ const tab = ref<Tab>(readTab())
 const onHash = () => (tab.value = readTab())
 window.addEventListener('hashchange', onHash)
 
-// --- Geräte und Optionen ---
+// --- Devices and options ---
 
 const version = ref('')
 const devices = ref<Device[]>([])
@@ -79,7 +79,7 @@ function changeLocale(e: Event) {
   setLocale((e.target as HTMLSelectElement).value)
 }
 
-// --- Hinweise (Toasts) für Ereignisse vom Scanner ---
+// --- Toasts for events from the scanner ---
 
 interface Toast {
   id: number

@@ -61,7 +61,7 @@ h2 {
   margin: 0;
 }
 
-/* --- Kopfzeile --- */
+/* --- Header --- */
 
 .topbar {
   position: sticky;
@@ -303,7 +303,7 @@ button.danger:hover:not(:disabled) {
   height: 0.75em;
 }
 
-/* --- Formulare --- */
+/* --- Forms --- */
 
 select,
 input[type='text'],
@@ -462,7 +462,7 @@ select.picked {
   margin-top: 1rem;
 }
 
-/* --- Ergebnis --- */
+/* --- Result --- */
 
 .facts {
   display: grid;
@@ -583,7 +583,7 @@ select.picked {
   white-space: nowrap;
 }
 
-/* --- Geräte --- */
+/* --- Devices --- */
 
 .device-list {
   list-style: none;

@@ -30,7 +30,7 @@ async function reload() {
 }
 onMounted(reload)
 
-// Optionen der Geräte (für Titel und Einheiten in der Liste)
+// Device options (for titles and units in the list)
 const deviceOptions = ref<Record<string, SaneOption[]>>({})
 async function ensureOptions(device: string): Promise<SaneOption[]> {
   if (!deviceOptions.value[device]) {
@@ -48,7 +48,7 @@ function optionTitle(device: string, name: string): string {
 }
 function summary(w: WatcherStatus): { name: string; value: string }[] {
   const opts = deviceOptions.value[w.config.Device] ?? []
-  // Reihenfolge wie beim Gerät (Go liefert die Map alphabetisch)
+  // Same order as the device (Go returns the map sorted alphabetically)
   const pos = (name: string) => {
     const i = opts.findIndex((o) => o.Name === name)
     return i < 0 ? Number.MAX_SAFE_INTEGER : i
@@ -65,14 +65,14 @@ function deviceLabel(name: string): string {
   return d ? `${d.Vendor} ${d.Model}` : name
 }
 
-/** Läuft für diesen Watcher gerade ein Scan? */
+/** Is a scan currently running for this watcher? */
 function isScanning(w: WatcherStatus): boolean {
   return live.scanning.some(
     (s) => s.source === 'button' && s.device === w.config.Device && s.sensor === w.config.WatchSensor,
   )
 }
 
-/** Kurz hervorheben, wenn die Taste gedrückt wurde. */
+/** Briefly highlight when the button was pressed. */
 const flash = ref('')
 let flashTimer: number | undefined
 
@@ -174,7 +174,7 @@ async function saveEditor() {
       NewDoc: d.NewDoc || undefined,
       Options: d.Options,
     })
-    // Taste oder Gerät geändert: alten Eintrag entfernen
+    // Button or device changed: remove the old entry
     if (ed.original && key(ed.original) !== key(d)) {
       await api.deleteWatcher(ed.original.Device, ed.original.WatchSensor)
     }
@@ -211,7 +211,7 @@ async function removeAll() {
   }
 }
 
-// --- Live-Ereignisse ---
+// --- Live events ---
 
 const offWatchers = onLive('watchers', () => {
   if (!saving.value) reload()
@@ -221,7 +221,7 @@ const offButton = onLive('button', (b) => {
   window.clearTimeout(flashTimer)
   flashTimer = window.setTimeout(() => (flash.value = ''), 1500)
 
-  // Im Editor: gedrückte (freie) Taste direkt übernehmen
+  // In the editor: take over a pressed (free) button directly
   const ed = editor.value
   if (ed && !b.watcher && b.device === ed.draft.Device && sensors.value.some((s) => s.Name === b.sensor)) {
     ed.draft.WatchSensor = b.sensor

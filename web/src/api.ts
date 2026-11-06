@@ -85,11 +85,11 @@ export const api = {
     }
   },
 
-  /** Letzter Scan aus dem Speicher von sarah (unabhängig vom Post-Scan-Skript). */
+  /** Last scan from sarah's memory (independent of the post-scan script). */
   lastPreviewUrl: () => `/preview/last?t=${Date.now()}`,
 }
 
-// Optionen eines Geräts ändern sich zur Laufzeit nicht, daher einfacher Cache
+// A device's options do not change at runtime, hence a simple cache
 const optionsCache = new Map<string, Promise<SaneOption[]>>()
 
 export function loadOptions(device: string, force = false): Promise<SaneOption[]> {

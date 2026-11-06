@@ -1,7 +1,7 @@
-# Wechsel auf Bookworm (Debian 12) für funktionierende Repos
+# Bookworm (Debian 12) for working repositories
 FROM debian:bookworm
 
-# ARM64 Repositories und Toolchain einrichten
+# Set up arm64 repositories and toolchain
 RUN dpkg --add-architecture arm64 && \
     apt-get update && \
     apt-get install -y \
@@ -13,7 +13,7 @@ RUN dpkg --add-architecture arm64 && \
     build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-# Go manuell installieren
+# Install Go manually
 ARG GO_VERSION=1.27.3
 RUN curl -fsSLO https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
