@@ -78,3 +78,7 @@ English and German are built in (`src/locales/`). More languages without rebuild
 | GET | `/i18n`, `/i18n/:code` | Languages of the web UI (only with the UI enabled) |
 
 Examples in `rest.http`.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
