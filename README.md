@@ -1,54 +1,56 @@
 # sarah
 
-REST-API für SANE-Scanner mit Überwachung der Scanner-Tasten und Web-UI. Gedacht als Ergänzung zu paperless-ngx.
+REST API for SANE scanners with scanner button watching and a web UI. Meant as a companion to paperless-ngx.
 
-## Bauen
+Documentation: see the [wiki](https://github.com/Ghardo/sarah/wiki).
 
-Voraussetzungen: [mise](https://mise.jdx.dev) (Go, Node, pnpm laut `mise.toml`) und Podman.
+## Build
 
-```sh
-mise run builder   # einmalig: Builder-Image für arm64 erstellen
-mise run build     # Web-UI bauen und sarah-pi4 erzeugen
-```
-
-Einzeln:
+Requirements: [mise](https://mise.jdx.dev) (Go, Node, pnpm as defined in `mise.toml`) and Podman.
 
 ```sh
-mise run ui        # nur Web-UI (web/ -> src/ui/dist)
-podman run --rm -v ./:/app:Z sarah-builder sh ./build-pi.sh   # nur Binary
+mise run builder   # once: create the builder image for arm64
+mise run build     # build the web UI and create sarah-pi4
 ```
 
-Ohne gebautes Web-UI läuft das Binary auch, `/ui/` ist dann nur nicht verfügbar.
+Separately:
 
-### Web-UI entwickeln
+```sh
+mise run ui        # web UI only (web/ -> src/ui/dist)
+podman run --rm -v ./:/app:Z sarah-builder sh ./build-pi.sh   # binary only
+```
+
+The binary also runs without a built web UI; `/ui/` is just unavailable then.
+
+### Developing the web UI
 
 ```sh
 cd web
 SARAH_API=http://raspberrypi.local:7575 pnpm dev
 ```
 
-Der Vite-Dev-Server leitet die API-Aufrufe an die angegebene sarah-Instanz weiter.
+The Vite dev server proxies the API calls to the given sarah instance.
 
-## Konfiguration
+## Configuration
 
-| Variable | Standard | Bedeutung |
+| Variable | Default | Meaning |
 | --- | --- | --- |
 | `SARAH_PORT` | `7575` | Port |
-| `SARAH_SCAN_DIR` | `scans` | Zielverzeichnis der Scans |
-| `SARAH_WATCHER_CONFIG` | `watchers.json` | Gespeicherte Watcher |
-| `SARAH_POST_SCAN_PROCESS` | – | Skript nach jedem Scan (`SARAH_SCAN_DIR`, `SARAH_SCAN_FILENAME` als Umgebung) |
-| `SARAH_ALLOWED_ORIGINS` | `*` | CORS, kommagetrennt |
+| `SARAH_SCAN_DIR` | `scans` | Target directory for scans |
+| `SARAH_WATCHER_CONFIG` | `watchers.json` | Saved watchers |
+| `SARAH_POST_SCAN_PROCESS` | – | Script run after every scan (`SARAH_SCAN_DIR`, `SARAH_SCAN_FILENAME` in the environment) |
+| `SARAH_ALLOWED_ORIGINS` | `*` | CORS, comma separated |
 | `SARAH_USE_TLS`, `SARAH_CERT_FILE`, `SARAH_KEY_FILE` | `false` | TLS |
-| `SARAH_UI_ENABLED` | `true` | Web-UI unter `/ui/` ausliefern |
-| `SARAH_LOCALES_DIR` | `locales` | Zusätzliche Sprachdateien fürs Web-UI |
+| `SARAH_UI_ENABLED` | `true` | Serve the web UI at `/ui/` |
+| `SARAH_LOCALES_DIR` | `locales` | Additional language files for the web UI |
 
-## Web-UI
+## Web UI
 
-Erreichbar unter `http://<host>:7575/ui/` (Browser werden von `/` dorthin umgeleitet). Abschalten mit `SARAH_UI_ENABLED=false`.
+Available at `http://<host>:7575/ui/` (browsers are redirected there from `/`). Disable it with `SARAH_UI_ENABLED=false`.
 
-### Sprachen
+### Languages
 
-Eingebaut sind Englisch und Deutsch (`src/locales/`). Weitere Sprachen ohne Neubau: eine Datei `<code>.json` (z. B. `fr.json`) in `SARAH_LOCALES_DIR` ablegen und die Seite neu laden. Vorlage ist `src/locales/en.json`, fehlende Texte werden auf Englisch angezeigt. Eine Datei mit dem Namen einer eingebauten Sprache (z. B. `de.json`) ersetzt diese.
+English and German are built in (`src/locales/`). More languages without rebuilding: put a file `<code>.json` (e.g. `fr.json`) into `SARAH_LOCALES_DIR` and reload the page. Use `src/locales/en.json` as a template; missing texts are shown in English. A file named like a built-in language (e.g. `de.json`) replaces it.
 
 ```json
 {
@@ -59,18 +61,18 @@ Eingebaut sind Englisch und Deutsch (`src/locales/`). Weitere Sprachen ohne Neub
 
 ## API
 
-| Methode | Pfad | Beschreibung |
+| Method | Path | Description |
 | --- | --- | --- |
 | GET | `/version` | Version |
-| GET | `/list` | Scanner |
-| GET | `/config?device=…` | Optionen eines Scanners |
-| POST | `/scan` | Scan starten |
-| GET | `/scans/:filename` | Gespeicherten Scan abrufen |
-| GET | `/preview/last` | Letzten Scan aus dem Speicher (auch wenn das Post-Scan-Skript die Datei schon verschoben hat) |
-| POST / DELETE | `/watch` | Watcher anlegen / entfernen |
-| DELETE | `/watch/all` | Alle Watcher entfernen |
-| GET | `/watch/list` | Watcher auflisten |
+| GET | `/list` | Scanners |
+| GET | `/config?device=…` | Options of a scanner |
+| POST | `/scan` | Start a scan |
+| GET | `/scans/:filename` | Fetch a saved scan |
+| GET | `/preview/last` | Last scan from memory (even if the post-scan script has already moved the file) |
+| POST / DELETE | `/watch` | Create / remove a watcher |
+| DELETE | `/watch/all` | Remove all watchers |
+| GET | `/watch/list` | List watchers |
 | GET | `/events` | Server-Sent Events: `scan-started`, `scan-completed`, `scan-failed`, `button-pressed`, `watchers-changed` |
-| GET | `/i18n`, `/i18n/:code` | Sprachen des Web-UI (nur bei aktivem UI) |
+| GET | `/i18n`, `/i18n/:code` | Languages of the web UI (only with the UI enabled) |
 
-Beispiele in `rest.http`.
+Examples in `rest.http`.

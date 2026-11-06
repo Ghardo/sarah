@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-# Post-Scan-Skript für sarah (SARAH_POST_SCAN_PROCESS).
+# Post-scan script for sarah (SARAH_POST_SCAN_PROCESS).
 #
-# sarah ruft dieses Skript nach jedem gespeicherten Scan auf und übergibt:
-#   SARAH_SCAN_DIR       Verzeichnis des Scans
-#   SARAH_SCAN_FILENAME  Dateiname der PNG
+# sarah calls this script after every saved scan and passes:
+#   SARAH_SCAN_DIR       directory of the scan
+#   SARAH_SCAN_FILENAME  file name of the PNG
 #
-# Standardmäßig passiert hier nichts. Was nach dem Scan geschehen soll, hängt
-# von der eigenen Umgebung ab. Ein Beispiel (PNG → PDF in den Consume-Ordner
-# von paperless-ngx) steht im Wiki auf der Seite „Paperless-Integration“.
+# By default nothing happens here. What should happen after a scan depends on
+# your own setup. An example (PNG → PDF into the consume folder of
+# paperless-ngx) is on the wiki page "Paperless-Integration".
 
 exit 0
