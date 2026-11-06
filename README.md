@@ -1,5 +1,7 @@
 # sarah
 
+**sarah** – **SA**ne **R**est **A**pi (the *h* is just there to make it readable)
+
 REST API for SANE scanners with scanner button watching and a web UI. Meant as a companion to paperless-ngx.
 
 Documentation: see the [wiki](https://github.com/Ghardo/sarah/wiki).
