@@ -1,0 +1,3 @@
+# The web UI is a companion to the Go service; keep it out of the language stats
+# so GitHub shows sarah as a Go project.
+web/** linguist-vendored
