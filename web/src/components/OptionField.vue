@@ -63,15 +63,15 @@ function onText(e: Event) {
   emit('update:modelValue', raw === '' ? undefined : raw)
 }
 
+/** Tooltip: the backend description and the technical name of the option. */
+const tooltip = computed(() => [props.option.Desc, `SANE: ${props.option.Name}`].filter(Boolean).join('\n'))
+
 const setLabel = (x: number | string) => (typeof x === 'number' ? formatNumber(x) : x)
 </script>
 
 <template>
   <div class="field" :class="{ 'field-set': modelValue !== undefined }">
-    <label :for="id" :title="option.Desc">
-      {{ option.Title || option.Name }}
-      <code>{{ option.Name }}</code>
-    </label>
+    <label :for="id" :title="tooltip">{{ option.Title || option.Name }}</label>
 
     <div class="field-input">
       <select v-if="kind === 'bool'" :id="id" :value="modelValue === undefined ? '' : String(modelValue)" @change="onBool">

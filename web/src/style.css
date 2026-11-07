@@ -371,10 +371,6 @@ select.picked {
   align-items: baseline;
   flex-wrap: wrap;
 }
-.field label code {
-  color: var(--muted);
-  font-weight: 400;
-}
 .field-input {
   display: flex;
   align-items: center;

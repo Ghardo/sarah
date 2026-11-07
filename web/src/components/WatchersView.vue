@@ -320,8 +320,8 @@ onBeforeUnmount(() => {
                   @change="pickedByButton = false"
                 >
                   <option value="" disabled>{{ t('watchers.chooseButton') }}</option>
-                  <option v-for="s in sensors" :key="s.Name" :value="s.Name">
-                    {{ s.Title || s.Name }} ({{ s.Name }}){{ usedSensors.has(s.Name) ? ` – ${t('watchers.taken')}` : '' }}
+                  <option v-for="s in sensors" :key="s.Name" :value="s.Name" :title="s.Name">
+                    {{ s.Title || s.Name }}{{ usedSensors.has(s.Name) ? ` – ${t('watchers.taken')}` : '' }}
                   </option>
                 </select>
               </div>
