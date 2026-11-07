@@ -67,7 +67,7 @@ var (
 	watcherConns     = make(map[string]*sane.Conn)
 )
 
-const version = "2.6.0"
+const version = "2.7.0"
 
 func main() {
 	cfg, err := loadConfig()
