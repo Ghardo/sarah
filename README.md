@@ -80,6 +80,17 @@ English and German are built in (`src/locales/`). More languages without rebuild
 
 Examples in `rest.http`.
 
+### File format
+
+`POST /scan` and `POST /watch` additionally accept `Format` and `Quality`. In the web UI this can be set under "File" when scanning and in the watcher editor.
+
+| Field | Values | Default |
+| --- | --- | --- |
+| `Format` | `png` (lossless) or `jpeg` | `png` |
+| `Quality` | 1–100, only with `jpeg` | `85` |
+
+The extension (`.png` or `.jpg`) is appended to the file name template to match the format. Grayscale and lineart scans are saved as single-channel JPEG. The resolution of the scan is written into the image (PNG `pHYs`, JPEG JFIF), so converters such as ImageMagick get the right page size. The preview (`POST /preview`) is always PNG.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).

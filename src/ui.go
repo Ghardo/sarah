@@ -61,25 +61,27 @@ func registerUI(router *gin.Engine) bool {
 
 // --- Preview of the last scan ---
 //
-// The post-scan script often moves or deletes the PNG right away, so the
+// The post-scan script often moves or deletes the file right away, so the
 // service additionally keeps the last scan in memory.
 
 var (
 	lastScanMutex sync.Mutex
 	lastScanName  string
 	lastScanData  []byte
+	lastScanMime  string
 )
 
-func storeLastScan(name string, data []byte) {
+func storeLastScan(name string, data []byte, mime string) {
 	lastScanMutex.Lock()
 	defer lastScanMutex.Unlock()
 	lastScanName = name
 	lastScanData = data
+	lastScanMime = mime
 }
 
 func getLastScan(c *gin.Context) {
 	lastScanMutex.Lock()
-	name, data := lastScanName, lastScanData
+	name, data, mime := lastScanName, lastScanData, lastScanMime
 	lastScanMutex.Unlock()
 
 	if data == nil {
@@ -88,5 +90,5 @@ func getLastScan(c *gin.Context) {
 	}
 	c.Header("Cache-Control", "no-store")
 	c.Header("X-Scan-Filename", name)
-	c.Data(http.StatusOK, "image/png", data)
+	c.Data(http.StatusOK, mime, data)
 }

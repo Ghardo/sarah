@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import FormatFields from './FormatFields.vue'
 import OptionsForm from './OptionsForm.vue'
 import { api, errorMessage, loadOptions } from '../api'
 import { live, onLive } from '../events'
 import { t } from '../i18n'
 import { filenamePlaceholders, formatValue, sensorOptions, suggestedValues } from '../options'
-import type { Device, SaneOption, ScanRequest, WatcherStatus } from '../types'
+import { DEFAULT_JPEG_QUALITY, type Device, type SaneOption, type ScanRequest, type WatcherStatus } from '../types'
 
 const props = defineProps<{ device: string; devices: Device[] }>()
 
@@ -60,6 +61,9 @@ function summary(w: WatcherStatus): { name: string; value: string }[] {
       value: formatValue(v, opts.find((o) => o.Name === name)),
     }))
 }
+function formatLabel(w: WatcherStatus): string {
+  return w.config.Format === 'jpeg' ? `JPEG ${w.config.Quality || DEFAULT_JPEG_QUALITY}` : 'PNG'
+}
 function deviceLabel(name: string): string {
   const d = props.devices.find((x) => x.Name === name)
   return d ? `${d.Vendor} ${d.Model}` : name
@@ -78,9 +82,12 @@ let flashTimer: number | undefined
 
 // --- Editor ---
 
+/** In the editor format and quality are always set, so the fields show something. */
+type Draft = ScanRequest & Required<Pick<ScanRequest, 'Format' | 'Quality'>>
+
 interface Editor {
   original: { Device: string; WatchSensor: string } | null
-  draft: ScanRequest
+  draft: Draft
 }
 const editor = ref<Editor | null>(null)
 const editorOptions = ref<SaneOption[]>([])
@@ -122,7 +129,15 @@ async function startNew() {
   pickedByButton.value = false
   editor.value = {
     original: null,
-    draft: { Device: device, WatchSensor: '', Filename: 'scan_{doc}_{index}_{date}_{time}', NewDoc: false, Options: {} },
+    draft: {
+      Device: device,
+      WatchSensor: '',
+      Filename: 'scan_{doc}_{index}_{date}_{time}',
+      NewDoc: false,
+      Format: 'png',
+      Quality: DEFAULT_JPEG_QUALITY,
+      Options: {},
+    },
   }
   if (!device) return
   await loadEditorOptions(device)
@@ -144,6 +159,8 @@ async function edit(w: WatcherStatus) {
       WatchSensor: c.WatchSensor ?? '',
       Filename: c.Filename ?? '',
       NewDoc: !!c.NewDoc,
+      Format: c.Format ?? 'png',
+      Quality: c.Quality || DEFAULT_JPEG_QUALITY,
       Options: { ...(c.Options ?? {}) },
     },
   }
@@ -172,6 +189,8 @@ async function saveEditor() {
       WatchSensor: d.WatchSensor,
       Filename: d.Filename?.trim() || undefined,
       NewDoc: d.NewDoc || undefined,
+      Format: d.Format,
+      Quality: d.Format === 'jpeg' ? d.Quality : undefined,
       Options: d.Options,
     })
     // Button or device changed: remove the old entry
@@ -267,6 +286,7 @@ onBeforeUnmount(() => {
               <span v-if="isScanning(w)" class="badge busy"><span class="spinner small"></span> {{ t('watchers.scanning') }}</span>
               <span v-else class="badge" :class="w.active ? 'ok' : 'off'">{{ w.active ? t('watchers.active') : t('watchers.inactive') }}</span>
               <span v-if="w.config.NewDoc" class="badge">{{ t('watchers.newDoc') }}</span>
+              <span class="badge">{{ formatLabel(w) }}</span>
             </div>
             <div class="watcher-sub">
               {{ deviceLabel(w.config.Device) }} · <code>{{ w.config.Filename || 'scan_{index}_{date}_{time}' }}</code>
@@ -343,8 +363,11 @@ onBeforeUnmount(() => {
               <div class="field-input">
                 <input id="w-filename" v-model="editor.draft.Filename" type="text" placeholder="scan_{index}_{date}_{time}" />
               </div>
-              <small class="hint">{{ t('file.placeholders', { list: filenamePlaceholders }) }}</small>
+              <small class="hint">
+                {{ t('file.placeholders', { list: filenamePlaceholders }) }} · {{ t('file.extension') }}
+              </small>
             </div>
+            <FormatFields v-model:format="editor.draft.Format" v-model:quality="editor.draft.Quality" id-prefix="w" />
             <label class="check">
               <input v-model="editor.draft.NewDoc" type="checkbox" />
               {{ t('file.newDocWatcher') }}
