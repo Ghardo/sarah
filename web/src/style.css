@@ -493,6 +493,102 @@ select.picked {
   object-fit: contain;
 }
 
+/* --- Scan area --- */
+.area-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.area-surface {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  touch-action: none;
+  user-select: none;
+  cursor: crosshair;
+  overflow: hidden;
+}
+.area-surface img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+.area-box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--accent);
+  /* darken the bed outside the area */
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.45);
+  cursor: move;
+}
+.area-size {
+  position: absolute;
+  left: 0.25rem;
+  top: 0.25rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.area-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  background: #fff;
+  z-index: 1;
+}
+.area-handle.tl,
+.area-handle.br {
+  cursor: nwse-resize;
+}
+.area-handle.tr,
+.area-handle.bl {
+  cursor: nesw-resize;
+}
+@media (pointer: coarse) {
+  /* larger handles for fingers */
+  .area-handle {
+    width: 22px;
+    height: 22px;
+    margin: -11px 0 0 -11px;
+  }
+}
+.area-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.area-toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.area-panel {
+  margin-bottom: 0.9rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.area-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
 /* --- Watcher --- */
 
 .watcher-list {

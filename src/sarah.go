@@ -66,7 +66,7 @@ var (
 	watcherConns     = make(map[string]*sane.Conn)
 )
 
-const version = "2.5.0-template-filename" // version
+const version = "2.6.0"
 
 func main() {
 	cfg, err := loadConfig()
@@ -114,6 +114,7 @@ func main() {
 	router.DELETE("/watch", stopWatcher)
 	router.DELETE("/watch/all", stopAllWatchers)
 	router.GET("/watch/list", listWatchers)
+	router.POST("/preview", previewHandler)
 	router.GET("/preview/last", getLastScan)
 	router.GET("/events", eventsHandler)
 
@@ -795,22 +796,29 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 func doScan(sr ScanRequest) ([]byte, error) {
+	return scanDevice(sr.Device, func([]sane.Option) map[string]any { return sr.Options })
+}
+
+// scanDevice opens the device, sets the options from options(...) and returns the scan as PNG.
+// options gets the options of the opened device, so e.g. the preview knows the limits.
+func scanDevice(device string, options func([]sane.Option) map[string]any) ([]byte, error) {
 	saneDeviceMutex.Lock()
 	defer saneDeviceMutex.Unlock()
 
 	// If the watcher holds the device open, it is forcibly closed here.
 	// This happens under the same lock as opening, so the watcher
 	// cannot grab the device again in between.
-	if conn := takeWatcherConn(sr.Device); conn != nil {
+	if conn := takeWatcherConn(device); conn != nil {
 		conn.Close()
 	}
 
-	c, err := openDevice(sr.Device)
+	c, err := openDevice(device)
 	if err != nil {
 		return nil, err
 	}
 	defer c.Close()
 
+	sr := ScanRequest{Device: device, Options: options(c.Options())}
 	for oName, oValue := range sr.Options {
 		var o *sane.Option
 		o, err = findOption(c.Options(), oName)

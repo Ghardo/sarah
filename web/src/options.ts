@@ -107,8 +107,20 @@ const geometryNames = ['tl-x', 'tl-y', 'br-x', 'br-y'] as const
 function geometry(opts: SaneOption[]) {
   const found = geometryNames.map((n) => opts.find((o) => o.Name === n))
   if (found.some((o) => !o || o.Unit !== Unit.Mm || !o.ConstrRange || !isScanOption(o))) return null
-  const [, , brX, brY] = found as SaneOption[]
-  return { maxX: brX.ConstrRange!.Max, maxY: brY.ConstrRange!.Max }
+  const [tlX, tlY, brX, brY] = found as SaneOption[]
+  return {
+    minX: tlX.ConstrRange!.Min,
+    minY: tlY.ConstrRange!.Min,
+    maxX: brX.ConstrRange!.Max,
+    maxY: brY.ConstrRange!.Max,
+  }
+}
+
+/** Scan bed of the device in mm (null if the device has no area in mm). */
+export type ScanBed = NonNullable<ReturnType<typeof geometry>>
+
+export function scanBed(opts: SaneOption[]): ScanBed | null {
+  return geometry(opts)
 }
 
 export function hasGeometry(opts: SaneOption[]): boolean {
