@@ -17,13 +17,12 @@ import (
 // --- File format of the scans ---
 //
 // Selectable per scan or watcher via ScanRequest.Format ("png" or "jpeg")
-// and ScanRequest.Quality (JPEG only, 1–100). Defaults to PNG.
+// and ScanRequest.Quality (JPEG only, 1–100). Defaults to PNG,
+// without a quality SARAH_JPEG_QUALITY applies.
 
 const (
 	formatPNG  = "png"
 	formatJPEG = "jpeg"
-
-	defaultJPEGQuality = 85
 )
 
 // normalizeFormat brings the format into normal form ("" → png, "jpg" → jpeg)
@@ -36,7 +35,7 @@ func normalizeFormat(sr *ScanRequest) error {
 	case formatJPEG, "jpg":
 		sr.Format = formatJPEG
 		if sr.Quality == 0 {
-			sr.Quality = defaultJPEGQuality
+			sr.Quality = settings.JPEGQuality
 		}
 		if sr.Quality < 1 || sr.Quality > 100 {
 			return fmt.Errorf("Quality must be between 1 and 100, got %d", sr.Quality)

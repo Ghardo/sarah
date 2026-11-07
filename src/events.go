@@ -21,7 +21,7 @@ import (
 //   scan-failed      scanInfo (with error)
 //   button-pressed   {device, sensor, watcher}  watcher = whether a watcher exists for it
 //   watchers-changed {}
-//   ping             every 25 s, keeps proxies/browsers happy
+//   ping             every SARAH_EVENTS_PING (default 25 s), keeps proxies/browsers happy
 
 type serverEvent struct {
 	name string
@@ -72,7 +72,7 @@ func eventsHandler(c *gin.Context) {
 	c.SSEvent("hello", gin.H{"version": version, "scanning": runningScans()})
 	c.Writer.Flush()
 
-	ping := time.NewTicker(25 * time.Second)
+	ping := time.NewTicker(settings.EventsPing)
 	defer ping.Stop()
 
 	c.Stream(func(io.Writer) bool {

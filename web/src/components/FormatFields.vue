@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { t } from '../i18n'
-import { DEFAULT_JPEG_QUALITY, type ImageFormat } from '../types'
+import { defaults } from '../defaults'
+import type { ImageFormat } from '../types'
 
 // File format (PNG/JPEG) and JPEG quality, for scans and watchers.
 // Used inside a .fields grid.
@@ -48,6 +49,6 @@ function onQuality(e: Event) {
         @change="onQuality"
       />
     </div>
-    <small class="hint">{{ t('file.qualityHint', { value: DEFAULT_JPEG_QUALITY }) }}</small>
+    <small class="hint">{{ t('file.qualityHint', { value: defaults.jpegQuality }) }}</small>
   </div>
 </template>

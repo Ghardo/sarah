@@ -15,9 +15,6 @@ import (
 // post-scan script runs, so the preview never ends up in paperless. The PNG
 // is returned directly in the response.
 
-// previewResolution is the desired preview resolution in dpi.
-const previewResolution = 75
-
 var geometryOptions = []string{"tl-x", "tl-y", "br-x", "br-y"}
 
 func previewHandler(c *gin.Context) {
@@ -73,7 +70,7 @@ func previewOptions(opts []sane.Option, base map[string]any) map[string]any {
 	}
 
 	if o, err := findOption(opts, "resolution"); err == nil && o.IsActive && o.IsSettable {
-		if r, ok := closestAllowed(o, previewResolution); ok {
+		if r, ok := closestAllowed(o, float64(settings.PreviewResolution)); ok {
 			values["resolution"] = r
 		}
 	}

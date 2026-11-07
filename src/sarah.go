@@ -67,7 +67,7 @@ var (
 	watcherConns     = make(map[string]*sane.Conn)
 )
 
-const version = "2.7.0"
+const version = "2.8.0"
 
 func main() {
 	cfg, err := loadConfig()
@@ -79,7 +79,7 @@ func main() {
 		watcherConfigFile = cfg.WatcherConfigPath
 	}
 
-	if err := os.MkdirAll(cfg.ScanDir, 0755); err != nil {
+	if err := os.MkdirAll(cfg.ScanDir, settings.DirMode); err != nil {
 		log.Fatalf("Failed to create scan directory %s: %v", cfg.ScanDir, err)
 	}
 	log.Printf("Scan directory is ready at %s", cfg.ScanDir)
@@ -93,7 +93,7 @@ func main() {
 	initializePersistentWatchers(cfg.ScanDir)
 
 	// Start the ONE global watcher loop
-	go globalWatcherLoop(cfg.ScanDir)
+	go globalWatcherLoop(cfg.ScanDir, settings.PollInterval)
 
 	router := gin.Default()
 
@@ -111,6 +111,7 @@ func main() {
 	router.GET("/config", getDeviceConfig)
 	router.GET("/scans/:filename", getScanImage(cfg.ScanDir))
 	router.GET("/version", getVersion)
+	router.GET("/defaults", getDefaults)
 	router.POST("/watch", startWatcher(cfg.ScanDir))
 	router.DELETE("/watch", stopWatcher)
 	router.DELETE("/watch/all", stopAllWatchers)
@@ -141,7 +142,7 @@ func main() {
 // --- Watcher functions ---
 
 func initializePersistentWatchers(scanDir string) {
-	time.Sleep(5 * time.Second)
+	time.Sleep(settings.WatcherStartDelay)
 	log.Println("Initializing persistent watchers...")
 
 	watcherMutex.Lock()
@@ -266,10 +267,10 @@ func stopAllWatchers(c *gin.Context) {
 }
 
 // globalWatcherLoop: this ONE goroutine polls all active watchers one after another.
-func globalWatcherLoop(scanDir string) {
+func globalWatcherLoop(scanDir string, pollInterval time.Duration) {
 	postScanScript := os.Getenv("SARAH_POST_SCAN_PROCESS")
 	cooldowns := make(map[string]time.Time)
-	ticker := time.NewTicker(50 * time.Millisecond)
+	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
 	// Cooldown for devices so the scan process has time to take over access
@@ -291,7 +292,7 @@ func globalWatcherLoop(scanDir string) {
 	}
 	saneDeviceMutex.Unlock()
 
-	log.Println(">>> Global Watcher Loop started <<<")
+	log.Printf(">>> Global Watcher Loop started (poll interval %s) <<<", pollInterval)
 
 	for {
 		<-ticker.C
@@ -390,7 +391,7 @@ func globalWatcherLoop(scanDir string) {
 					log.Printf("Watcher: Could not get option '%s' on device '%s': %v. Skipping this option.", opt.Name, device, err)
 
 					errorCount++
-					if errorCount > 5 {
+					if errorCount > settings.SensorErrorLimit {
 						log.Printf("Watcher: Too many consecutive errors on device '%s'. Assuming connection is lost.", device)
 						takeWatcherConn(device)
 						conn.Close()
@@ -438,13 +439,13 @@ func globalWatcherLoop(scanDir string) {
 						conn.Close()
 					}
 					saneDeviceMutex.Unlock()
-					deviceCooldowns[device] = time.Now().Add(2 * time.Second)
+					deviceCooldowns[device] = time.Now().Add(settings.ScanCooldown)
 
 					log.Printf("Executing scan for watcher: %s", watcherKey)
 					go executeWatchedScan(req, scanDir, postScanScript, watcherKey)
 				} else {
 					// Only log, keep the connection open!
-					cooldowns[watcherKey] = time.Now().Add(1 * time.Second)
+					cooldowns[watcherKey] = time.Now().Add(settings.ButtonCooldown)
 					log.Printf("No watcher configured for button '%s' on device '%s'", pressedButton, device)
 				}
 			}
@@ -477,7 +478,7 @@ func executeWatchedScan(sr ScanRequest, scanDir string, postScanScript string, w
 		filename := generateFilename(sr)
 		filePath := filepath.Join(scanDir, filename)
 
-		if err := os.WriteFile(filePath, imgBytes, 0644); err != nil {
+		if err := writeScanFile(filePath, imgBytes); err != nil {
 			log.Printf("Watcher error (save file, %s): %v", watcherKey, err)
 			scan.fail(err)
 			return
@@ -610,18 +611,18 @@ func generateFilename(sr ScanRequest) string {
 	docStr := strconv.Itoa(docIndex)
 
 	now := time.Now()
-	dateStr := now.Format("20060102")
-	timeStr := now.Format("150405")
+	dateStr := now.Format(settings.DateFormat)
+	timeStr := now.Format(settings.TimeFormat)
 
 	// 2. Determine the base template
 	var baseTemplate string
 	if sr.Filename != "" {
 		baseTemplate = filepath.Base(sr.Filename) // prevents path traversal
 		if baseTemplate == "." || baseTemplate == "" {
-			baseTemplate = "scan_{index}_{date}_{time}" // Fallback
+			baseTemplate = settings.FilenameTemplate // Fallback
 		}
 	} else {
-		baseTemplate = "scan_{index}_{date}_{time}" // Default
+		baseTemplate = settings.FilenameTemplate // Default
 	}
 
 	// 3. Remove an image extension if present (the matching one is appended at the end)
@@ -723,7 +724,7 @@ func scanHandler(scanDir string) gin.HandlerFunc {
 		filename := generateFilename(sr)
 		filePath := filepath.Join(scanDir, filename)
 
-		if err := os.WriteFile(filePath, imgBytes, 0644); err != nil {
+		if err := writeScanFile(filePath, imgBytes); err != nil {
 			log.Printf("ERROR: Failed to save scan to disk %s: %v", filePath, err)
 			scan.fail(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save scan"})
@@ -784,6 +785,9 @@ func loadConfig() (Config, error) {
 	uiEnabled, err := strconv.ParseBool(getEnv("SARAH_UI_ENABLED", "true"))
 	if err != nil {
 		return Config{}, fmt.Errorf("invalid SARAH_UI_ENABLED: %w", err)
+	}
+	if settings, err = loadSettings(); err != nil {
+		return Config{}, err
 	}
 	var origins []string
 	originsStr := getEnv("SARAH_ALLOWED_ORIGINS", "")

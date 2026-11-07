@@ -6,7 +6,8 @@ import { api, errorMessage, loadOptions } from '../api'
 import { live, onLive } from '../events'
 import { t } from '../i18n'
 import { filenamePlaceholders, formatValue, sensorOptions, suggestedValues } from '../options'
-import { DEFAULT_JPEG_QUALITY, type Device, type SaneOption, type ScanRequest, type WatcherStatus } from '../types'
+import { defaults } from '../defaults'
+import type { Device, SaneOption, ScanRequest, WatcherStatus } from '../types'
 
 const props = defineProps<{ device: string; devices: Device[] }>()
 
@@ -62,7 +63,7 @@ function summary(w: WatcherStatus): { name: string; value: string }[] {
     }))
 }
 function formatLabel(w: WatcherStatus): string {
-  return w.config.Format === 'jpeg' ? `JPEG ${w.config.Quality || DEFAULT_JPEG_QUALITY}` : 'PNG'
+  return w.config.Format === 'jpeg' ? `JPEG ${w.config.Quality || defaults.jpegQuality}` : 'PNG'
 }
 function deviceLabel(name: string): string {
   const d = props.devices.find((x) => x.Name === name)
@@ -135,7 +136,7 @@ async function startNew() {
       Filename: 'scan_{doc}_{index}_{date}_{time}',
       NewDoc: false,
       Format: 'png',
-      Quality: DEFAULT_JPEG_QUALITY,
+      Quality: defaults.jpegQuality,
       Options: {},
     },
   }
@@ -160,7 +161,7 @@ async function edit(w: WatcherStatus) {
       Filename: c.Filename ?? '',
       NewDoc: !!c.NewDoc,
       Format: c.Format ?? 'png',
-      Quality: c.Quality || DEFAULT_JPEG_QUALITY,
+      Quality: c.Quality || defaults.jpegQuality,
       Options: { ...(c.Options ?? {}) },
     },
   }
@@ -289,7 +290,7 @@ onBeforeUnmount(() => {
               <span class="badge">{{ formatLabel(w) }}</span>
             </div>
             <div class="watcher-sub">
-              {{ deviceLabel(w.config.Device) }} · <code>{{ w.config.Filename || 'scan_{index}_{date}_{time}' }}</code>
+              {{ deviceLabel(w.config.Device) }} · <code>{{ w.config.Filename || defaults.filenameTemplate }}</code>
             </div>
             <div v-if="summary(w).length" class="chips">
               <span v-for="s in summary(w)" :key="s.name" class="chip" :title="optionTitle(w.config.Device, s.name)">
@@ -361,7 +362,7 @@ onBeforeUnmount(() => {
             <div class="field wide">
               <label for="w-filename">{{ t('file.template') }}</label>
               <div class="field-input">
-                <input id="w-filename" v-model="editor.draft.Filename" type="text" placeholder="scan_{index}_{date}_{time}" />
+                <input id="w-filename" v-model="editor.draft.Filename" type="text" :placeholder="defaults.filenameTemplate" />
               </div>
               <small class="hint">
                 {{ t('file.placeholders', { list: filenamePlaceholders }) }} · {{ t('file.extension') }}
