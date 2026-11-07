@@ -3,7 +3,7 @@ import { reactive } from 'vue'
 export interface ScanInfo {
   id: number
   device: string
-  source: 'api' | 'button'
+  source: 'api' | 'button' | 'preview'
   sensor?: string
   started: string
   filename?: string
@@ -83,11 +83,14 @@ export function connectEvents(): void {
   })
   on<ScanInfo>('scan-completed', (s) => {
     removeScan(s.id)
+    // Preview scans are not a result, the image only goes to whoever started it
+    if (s.source === 'preview') return
     live.lastCompleted = s
     emit(listeners.completed, s)
   })
   on<ScanInfo>('scan-failed', (s) => {
     removeScan(s.id)
+    if (s.source === 'preview') return
     emit(listeners.failed, s)
   })
   on<Omit<ButtonPress, 'at'>>('button-pressed', (b) => {

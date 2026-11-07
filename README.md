@@ -70,6 +70,7 @@ English and German are built in (`src/locales/`). More languages without rebuild
 | GET | `/config?device=…` | Options of a scanner |
 | POST | `/scan` | Start a scan |
 | GET | `/scans/:filename` | Fetch a saved scan |
+| POST | `/preview` | Preview of the whole bed at 75 dpi as PNG (no file, no post-scan script), used by the area selection in the web UI |
 | GET | `/preview/last` | Last scan from memory (even if the post-scan script has already moved the file) |
 | POST / DELETE | `/watch` | Create / remove a watcher |
 | DELETE | `/watch/all` | Remove all watchers |

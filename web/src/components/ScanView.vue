@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import AreaSelect from './AreaSelect.vue'
 import OptionsForm from './OptionsForm.vue'
 import { api, errorMessage } from '../api'
 import { live, onLive, type ScanInfo } from '../events'
 import { t } from '../i18n'
-import { filenamePlaceholders, suggestedValues } from '../options'
+import { filenamePlaceholders, scanBed, suggestedValues } from '../options'
 import { load, save } from '../storage'
 import type { OptionValues, SaneOption } from '../types'
 
@@ -69,7 +70,9 @@ const error = ref('')
 const elapsed = ref(0)
 let timer: number | undefined
 
-const canScan = computed(() => !!props.device && props.options.length > 0 && !scanning.value && !busy.value)
+const canScan = computed(
+  () => !!props.device && props.options.length > 0 && !scanning.value && !previewing.value && !busy.value,
+)
 
 async function scan() {
   if (!canScan.value) return
@@ -97,6 +100,60 @@ async function scan() {
   }
 }
 
+// --- Preview for the area selection ---
+
+const bed = computed(() => scanBed(props.options))
+/** The area selection is hidden by default and opened with "Preview" next to the format. */
+const showArea = ref(false)
+const previewImage = ref('')
+const previewing = ref(false)
+const previewError = ref('')
+
+/** On the feeder the preview would pull a sheet through, so flatbed only. */
+const feederSelected = computed(() => {
+  const src = values.value.source
+  return typeof src === 'string' && /adf|feeder|duplex|einzug/i.test(src)
+})
+const canPreview = computed(() => canScan.value && !previewing.value && !feederSelected.value)
+
+function setPreviewImage(url: string) {
+  if (previewImage.value) URL.revokeObjectURL(previewImage.value)
+  previewImage.value = url
+}
+
+async function preview() {
+  if (!canPreview.value) return
+  previewing.value = true
+  previewError.value = ''
+  elapsed.value = 0
+  const started = Date.now()
+  timer = window.setInterval(() => (elapsed.value = Math.floor((Date.now() - started) / 1000)), 250)
+  try {
+    const blob = await api.preview({ Device: props.device, Options: values.value })
+    setPreviewImage(URL.createObjectURL(blob))
+  } catch (e) {
+    previewError.value = t('area.previewFailed', { error: errorMessage(e) })
+  } finally {
+    previewing.value = false
+    window.clearInterval(timer)
+  }
+}
+
+/** Opens the area selection and scans a preview right away the first time. */
+function toggleArea() {
+  showArea.value = !showArea.value
+  if (showArea.value && !previewImage.value) preview()
+}
+
+// The preview belongs to the device
+watch(
+  () => props.device,
+  () => {
+    setPreviewImage('')
+    showArea.value = false
+  },
+)
+
 const offCompleted = onLive('completed', (s) => {
   if (s.device === props.device) showResult(s)
 })
@@ -107,6 +164,7 @@ const offFailed = onLive('failed', (s) => {
 })
 onBeforeUnmount(() => {
   window.clearInterval(timer)
+  setPreviewImage('')
   offCompleted()
   offFailed()
 })
@@ -126,7 +184,34 @@ onBeforeUnmount(() => {
       <p v-else-if="optionsLoading" class="muted">{{ t('common.loadingOptions') }}</p>
       <p v-else-if="optionsError" class="alert">{{ optionsError }}</p>
       <template v-else>
-        <OptionsForm v-model="values" :options="options" />
+        <OptionsForm v-model="values" :options="options">
+          <template v-if="bed" #format>
+            <button
+              type="button"
+              class="area-toggle"
+              :class="{ active: showArea }"
+              :aria-pressed="showArea"
+              :aria-expanded="showArea"
+              @click="toggleArea"
+            >
+              {{ t('area.toggle') }}
+            </button>
+          </template>
+          <template v-if="bed && showArea" #area>
+            <div class="area-panel">
+              <div class="area-actions">
+                <button type="button" :disabled="!canPreview" @click="preview">
+                  <span v-if="previewing" class="spinner" aria-hidden="true"></span>
+                  <template v-if="previewing">{{ t('area.previewing', { seconds: elapsed }) }}</template>
+                  <template v-else>{{ previewImage ? t('area.rescan') : t('area.preview') }}</template>
+                </button>
+                <small v-if="feederSelected" class="hint">{{ t('area.feeder') }}</small>
+              </div>
+              <p v-if="previewError" class="alert">{{ previewError }}</p>
+              <AreaSelect v-model="values" :bed="bed" :image="previewImage" />
+            </div>
+          </template>
+        </OptionsForm>
 
         <fieldset class="group">
           <legend>{{ t('file.legend') }}</legend>

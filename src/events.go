@@ -94,7 +94,7 @@ func eventsHandler(c *gin.Context) {
 type scanInfo struct {
 	ID       int64     `json:"id"`
 	Device   string    `json:"device"`
-	Source   string    `json:"source"` // "api" or "button"
+	Source   string    `json:"source"` // "api", "button" or "preview"
 	Sensor   string    `json:"sensor,omitempty"`
 	Started  time.Time `json:"started"`
 	Filename string    `json:"filename,omitempty"`

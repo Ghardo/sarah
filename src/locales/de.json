@@ -75,6 +75,17 @@
     "download": "PNG herunterladen",
     "empty": "Noch kein Scan. Scans über die Tasten am Scanner erscheinen hier automatisch."
   },
+  "area": {
+    "toggle": "Vorschau",
+    "preview": "Vorschau scannen",
+    "previewing": "Vorschau … {seconds}s",
+    "previewFailed": "Vorschau fehlgeschlagen: {error}",
+    "previewAlt": "Vorschau der Scanfläche",
+    "feeder": "Vorschau nur am Flachbett möglich.",
+    "hint": "Rechteck aufziehen, an den Ecken anpassen oder verschieben.",
+    "all": "Ganze Fläche",
+    "rescan": "Vorschau neu scannen"
+  },
   "watchers": {
     "title": "Watcher",
     "new": "Neuer Watcher",

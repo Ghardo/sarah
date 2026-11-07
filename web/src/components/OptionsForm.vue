@@ -46,7 +46,9 @@ function applyPaper(id: string) {
           {{ paperLabel(s) }}
         </button>
       </div>
+      <slot name="format" />
     </div>
+    <slot v-if="geometry" name="area" />
 
     <fieldset v-for="g in groups" :key="g.group" class="group">
       <legend>{{ g.group }}</legend>

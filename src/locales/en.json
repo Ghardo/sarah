@@ -75,6 +75,17 @@
     "download": "Download PNG",
     "empty": "No scan yet. Scans started with the buttons on the scanner show up here automatically."
   },
+  "area": {
+    "toggle": "Preview",
+    "preview": "Scan preview",
+    "previewing": "Preview … {seconds}s",
+    "previewFailed": "Preview failed: {error}",
+    "previewAlt": "Preview of the scan bed",
+    "feeder": "Preview is only available on the flatbed.",
+    "hint": "Drag a rectangle, adjust it at the corners or move it.",
+    "all": "Whole area",
+    "rescan": "Rescan preview"
+  },
   "watchers": {
     "title": "Watchers",
     "new": "New watcher",

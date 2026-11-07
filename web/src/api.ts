@@ -85,6 +85,31 @@ export const api = {
     }
   },
 
+  /** Preview of the whole bed at a low resolution, without a file or post-scan script. */
+  async preview(req: ScanRequest): Promise<Blob> {
+    let res: Response
+    try {
+      res = await fetch('/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req),
+      })
+    } catch {
+      throw new ApiError(0, t('errors.unreachable'))
+    }
+    if (!res.ok) {
+      let msg = `${res.status} ${res.statusText}`
+      try {
+        const d = (await res.json()) as { error?: unknown }
+        if (d.error) msg = String(d.error)
+      } catch {
+        // not JSON
+      }
+      throw new ApiError(res.status, msg)
+    }
+    return res.blob()
+  },
+
   /** Last scan from sarah's memory (independent of the post-scan script). */
   lastPreviewUrl: () => `/preview/last?t=${Date.now()}`,
 }
