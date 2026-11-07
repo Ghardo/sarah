@@ -1,3 +1,7 @@
+# LF line endings everywhere, also in Windows checkouts
+# (scripts like build-pi.sh run in a Linux container).
+* text=auto eol=lf
+
 # The web UI is a companion to the Go service; keep it out of the language stats
 # so GitHub shows sarah as a Go project.
 web/** linguist-vendored
