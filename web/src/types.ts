@@ -52,11 +52,20 @@ export interface Device {
 export type OptionValue = boolean | number | string
 export type OptionValues = Record<string, OptionValue>
 
+export type ImageFormat = 'png' | 'jpeg'
+
+/** Default JPEG quality, same as in the backend (defaultJPEGQuality). */
+export const DEFAULT_JPEG_QUALITY = 85
+
 export interface ScanRequest {
   Device: string
   WatchSensor?: string
   Filename?: string
   NewDoc?: boolean
+  /** File format, PNG if not set */
+  Format?: ImageFormat
+  /** JPEG quality 1–100 (only with format jpeg) */
+  Quality?: number
   Options: OptionValues
 }
 

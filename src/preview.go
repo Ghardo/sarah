@@ -32,9 +32,13 @@ func previewHandler(c *gin.Context) {
 	}
 
 	scan := beginScan(sr.Device, "preview", "")
-	img, err := scanDevice(sr.Device, func(opts []sane.Option) map[string]any {
+	raw, err := scanDevice(sr.Device, func(opts []sane.Option) map[string]any {
 		return previewOptions(opts, sr.Options)
 	})
+	var img []byte
+	if err == nil {
+		img, err = encodeImage(raw.img, formatPNG, 0, raw.dpiX, raw.dpiY)
+	}
 	if err != nil {
 		log.Printf("ERROR: Preview scan failed: %v", err)
 		scan.fail(err)

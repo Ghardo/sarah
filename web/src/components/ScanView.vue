@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import AreaSelect from './AreaSelect.vue'
+import FormatFields from './FormatFields.vue'
 import OptionsForm from './OptionsForm.vue'
 import { api, errorMessage } from '../api'
 import { live, onLive, type ScanInfo } from '../events'
 import { t } from '../i18n'
 import { filenamePlaceholders, scanBed, suggestedValues } from '../options'
 import { load, save } from '../storage'
-import type { OptionValues, SaneOption } from '../types'
+import { DEFAULT_JPEG_QUALITY, type ImageFormat, type OptionValues, type SaneOption } from '../types'
 
 const props = defineProps<{
   device: string
@@ -21,11 +22,15 @@ interface Settings {
   values: OptionValues
   filename: string
   newDoc: boolean
+  format?: ImageFormat
+  quality?: number
 }
 
 const values = ref<OptionValues>({})
 const filename = ref('')
 const newDoc = ref(false)
+const format = ref<ImageFormat>('png')
+const quality = ref(DEFAULT_JPEG_QUALITY)
 
 // Remember settings per device
 watch(
@@ -36,12 +41,21 @@ watch(
     values.value = s?.values ?? suggestedValues(options)
     filename.value = s?.filename ?? ''
     newDoc.value = s?.newDoc ?? false
+    format.value = s?.format ?? 'png'
+    quality.value = s?.quality ?? DEFAULT_JPEG_QUALITY
   },
   { immediate: true },
 )
-watch([values, filename, newDoc], () => {
+watch([values, filename, newDoc, format, quality], () => {
   if (props.device && props.options.length) {
-    save(`scan:${props.device}`, { values: values.value, filename: filename.value, newDoc: newDoc.value })
+    const s: Settings = {
+      values: values.value,
+      filename: filename.value,
+      newDoc: newDoc.value,
+      format: format.value,
+      quality: quality.value,
+    }
+    save(`scan:${props.device}`, s)
   }
 })
 
@@ -86,6 +100,8 @@ async function scan() {
       Device: props.device,
       Filename: filename.value.trim() || undefined,
       NewDoc: newDoc.value || undefined,
+      Format: format.value,
+      Quality: format.value === 'jpeg' ? quality.value : undefined,
       Options: values.value,
     })
     // If the SSE event has not arrived (yet), show the result from the response
@@ -225,6 +241,7 @@ onBeforeUnmount(() => {
                 {{ t('file.placeholders', { list: filenamePlaceholders }) }} · {{ t('file.extension') }}
               </small>
             </div>
+            <FormatFields v-model:format="format" v-model:quality="quality" id-prefix="scan" />
             <label class="check">
               <input v-model="newDoc" type="checkbox" />
               {{ t('file.newDocScan') }}

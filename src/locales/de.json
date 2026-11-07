@@ -52,7 +52,12 @@
     "legend": "Datei",
     "template": "Dateiname (Vorlage)",
     "placeholders": "Platzhalter: {list}",
-    "extension": "Endung .png wird ergänzt",
+    "extension": "Endung (.png/.jpg) wird passend zum Format ergänzt",
+    "format": "Dateiformat",
+    "formatPng": "PNG (verlustfrei)",
+    "formatJpeg": "JPEG (komprimiert)",
+    "quality": "JPEG-Qualität",
+    "qualityHint": "Niedriger = kleinere Datei. Standard: {value}",
     "newDocScan": "Neues Dokument beginnen ({doc} +1, {index} zurück auf 1)",
     "newDocWatcher": "Mit jedem Druck ein neues Dokument beginnen"
   },
@@ -72,7 +77,7 @@
     "triggerApi": "Web/API",
     "previewAlt": "Vorschau von {file}",
     "noPreview": "Keine Vorschau verfügbar.",
-    "download": "PNG herunterladen",
+    "download": "Herunterladen",
     "empty": "Noch kein Scan. Scans über die Tasten am Scanner erscheinen hier automatisch."
   },
   "area": {

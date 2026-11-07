@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	"image/png"
 	"log"
 	"net/http"
 	"os"
@@ -28,6 +27,8 @@ type ScanRequest struct {
 	WatchSensor string         `json:"WatchSensor,omitempty"`
 	Filename    string         `json:"Filename,omitempty"` // used as a template
 	NewDoc      bool           `json:"NewDoc,omitempty"`
+	Format      string         `json:"Format,omitempty"`  // "png" (default) or "jpeg"
+	Quality     int            `json:"Quality,omitempty"` // JPEG quality 1–100, default 85
 	Options     map[string]any `json:"Options"`
 }
 
@@ -66,7 +67,7 @@ var (
 	watcherConns     = make(map[string]*sane.Conn)
 )
 
-const version = "2.6.0"
+const version = "2.7.0"
 
 func main() {
 	cfg, err := loadConfig()
@@ -172,6 +173,10 @@ func startWatcher(scanDir string) gin.HandlerFunc {
 		}
 		if sr.Device == "" || sr.WatchSensor == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Device and WatchSensor are required"})
+			return
+		}
+		if err := normalizeFormat(&sr); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
@@ -451,6 +456,13 @@ func globalWatcherLoop(scanDir string) {
 func executeWatchedScan(sr ScanRequest, scanDir string, postScanScript string, watcherKey string) {
 	scan := beginScan(sr.Device, "button", sr.WatchSensor)
 
+	// Older or hand-edited watchers.json: validate the format here as well
+	if err := normalizeFormat(&sr); err != nil {
+		log.Printf("Watcher (%s): invalid format: %v", watcherKey, err)
+		scan.fail(err)
+		return
+	}
+
 	imgBytes, err := doScan(sr)
 	if err != nil {
 		log.Printf("Watcher scan execution error (%s): %v", watcherKey, err)
@@ -472,7 +484,7 @@ func executeWatchedScan(sr ScanRequest, scanDir string, postScanScript string, w
 		}
 
 		log.Printf("Watcher (%s): saved to %s", watcherKey, filename)
-		storeLastScan(filename, imgBytes)
+		storeLastScan(filename, imgBytes, formatMime(sr.Format))
 		scan.done(filename, imgBytes)
 
 		if postScanScript != "" {
@@ -612,9 +624,12 @@ func generateFilename(sr ScanRequest) string {
 		baseTemplate = "scan_{index}_{date}_{time}" // Default
 	}
 
-	// 3. Remove .png if present (it is always appended at the end)
-	if strings.HasSuffix(strings.ToLower(baseTemplate), ".png") {
-		baseTemplate = baseTemplate[:len(baseTemplate)-4]
+	// 3. Remove an image extension if present (the matching one is appended at the end)
+	for _, ext := range []string{".png", ".jpg", ".jpeg"} {
+		if strings.HasSuffix(strings.ToLower(baseTemplate), ext) {
+			baseTemplate = baseTemplate[:len(baseTemplate)-len(ext)]
+			break
+		}
 	}
 
 	// 4. Replace the placeholders
@@ -623,8 +638,8 @@ func generateFilename(sr ScanRequest) string {
 	result = strings.ReplaceAll(result, "{time}", timeStr)
 	result = strings.ReplaceAll(result, "{doc}", docStr)
 
-	// 5. Make sure the file ends with .png
-	return result + ".png"
+	// 5. Append the extension matching the format
+	return result + formatExt(sr.Format)
 }
 
 // --- HTTP handlers ---
@@ -689,6 +704,10 @@ func scanHandler(scanDir string) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
 			return
 		}
+		if err := normalizeFormat(&sr); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 
 		scan := beginScan(sr.Device, "api", "")
 
@@ -711,7 +730,7 @@ func scanHandler(scanDir string) gin.HandlerFunc {
 			return
 		}
 
-		storeLastScan(filename, imgBytes)
+		storeLastScan(filename, imgBytes, formatMime(sr.Format))
 		scan.done(filename, imgBytes)
 
 		if postScanScript != "" {
@@ -795,13 +814,26 @@ func getEnv(key, fallback string) string {
 	}
 	return fallback
 }
+
+// doScan scans with the options from sr and returns the scan in the format of sr (PNG or JPEG),
+// with the scan resolution in the metadata.
 func doScan(sr ScanRequest) ([]byte, error) {
-	return scanDevice(sr.Device, func([]sane.Option) map[string]any { return sr.Options })
+	s, err := scanDevice(sr.Device, func([]sane.Option) map[string]any { return sr.Options })
+	if err != nil {
+		return nil, err
+	}
+	return encodeImage(s.img, sr.Format, sr.Quality, s.dpiX, s.dpiY)
 }
 
-// scanDevice opens the device, sets the options from options(...) and returns the scan as PNG.
+// scannedImage is a scan together with the resolution actually used (0 = unknown).
+type scannedImage struct {
+	img        image.Image
+	dpiX, dpiY float64
+}
+
+// scanDevice opens the device, sets the options from options(...) and returns the scanned image.
 // options gets the options of the opened device, so e.g. the preview knows the limits.
-func scanDevice(device string, options func([]sane.Option) map[string]any) ([]byte, error) {
+func scanDevice(device string, options func([]sane.Option) map[string]any) (*scannedImage, error) {
 	saneDeviceMutex.Lock()
 	defer saneDeviceMutex.Unlock()
 
@@ -843,15 +875,53 @@ func scanDevice(device string, options func([]sane.Option) map[string]any) ([]by
 			return nil, fmt.Errorf("failed to set option '%s' on device '%s': %w", oName, sr.Device, err)
 		}
 	}
+	// Read the resolution back from the device after setting the options: the driver
+	// may have rounded it, and without a value in the request the device default applies.
+	dpiX, dpiY := scanResolution(c)
+
 	img, err := c.ReadImage()
 	if err != nil {
 		return nil, err
 	}
-	buf := new(bytes.Buffer)
-	if err := png.Encode(buf, img); err != nil {
-		return nil, err
+	return &scannedImage{img: img, dpiX: dpiX, dpiY: dpiY}, nil
+}
+
+// scanResolution returns the configured resolution in dpi (0 if unknown).
+// Some drivers have separate x-/y-resolution, otherwise resolution applies to both axes.
+func scanResolution(c *sane.Conn) (float64, float64) {
+	get := func(name string) float64 {
+		o, err := findOption(c.Options(), name)
+		if err != nil || !o.IsActive {
+			return 0
+		}
+		v, err := c.GetOption(name)
+		if err != nil {
+			return 0
+		}
+		switch n := v.(type) {
+		case []int:
+			if len(n) > 0 {
+				return float64(n[0])
+			}
+		case []float64:
+			if len(n) > 0 {
+				return n[0]
+			}
+		}
+		return toFloat(v)
 	}
-	return buf.Bytes(), nil
+	res := get("resolution")
+	x, y := get("x-resolution"), get("y-resolution")
+	if x == 0 {
+		x = res
+	}
+	if y == 0 {
+		y = res
+	}
+	if y == 0 {
+		y = x
+	}
+	return x, y
 }
 
 func openDevice(name string) (*sane.Conn, error) {

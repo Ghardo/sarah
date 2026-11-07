@@ -409,6 +409,15 @@ select.picked {
   accent-color: var(--accent);
 }
 
+.quality-range {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+.quality-number {
+  width: 4.5rem;
+}
+
 .paper {
   display: flex;
   align-items: center;

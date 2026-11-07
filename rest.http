@@ -60,6 +60,27 @@ Content-Type: application/json
     }
 }
 
+###
+# POST: Scan as JPEG (quality 1–100, default 85)
+# "Format" is "png" (default) or "jpeg". The extension .png/.jpg is appended to match.
+# Works the same way for POST /watch.
+POST {{host}}/scan
+Content-Type: application/json
+
+{
+    "Device": "{{deviceName}}",
+    "Format": "jpeg",
+    "Quality": 80,
+    "Options": {
+        "mode": "Color",
+        "resolution": 300,
+        "tl-x": 0.0,
+        "tl-y": 0.0,
+        "br-x": 210.0,
+        "br-y": 297.0
+    }
+}
+
 # -----------------------------------------------------
 # HARDWARE BUTTON WATCHERS
 # -----------------------------------------------------
