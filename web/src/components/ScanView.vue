@@ -8,7 +8,8 @@ import { live, onLive, type ScanInfo } from '../events'
 import { t } from '../i18n'
 import { filenamePlaceholders, scanBed, suggestedValues } from '../options'
 import { load, save } from '../storage'
-import { DEFAULT_JPEG_QUALITY, type ImageFormat, type OptionValues, type SaneOption } from '../types'
+import { defaults } from '../defaults'
+import type { ImageFormat, OptionValues, SaneOption } from '../types'
 
 const props = defineProps<{
   device: string
@@ -30,7 +31,7 @@ const values = ref<OptionValues>({})
 const filename = ref('')
 const newDoc = ref(false)
 const format = ref<ImageFormat>('png')
-const quality = ref(DEFAULT_JPEG_QUALITY)
+const quality = ref(defaults.jpegQuality)
 
 // Remember settings per device
 watch(
@@ -42,7 +43,7 @@ watch(
     filename.value = s?.filename ?? ''
     newDoc.value = s?.newDoc ?? false
     format.value = s?.format ?? 'png'
-    quality.value = s?.quality ?? DEFAULT_JPEG_QUALITY
+    quality.value = s?.quality ?? defaults.jpegQuality
   },
   { immediate: true },
 )
@@ -235,7 +236,7 @@ onBeforeUnmount(() => {
             <div class="field wide">
               <label for="scan-filename">{{ t('file.template') }}</label>
               <div class="field-input">
-                <input id="scan-filename" v-model="filename" type="text" placeholder="scan_{index}_{date}_{time}" />
+                <input id="scan-filename" v-model="filename" type="text" :placeholder="defaults.filenameTemplate" />
               </div>
               <small class="hint">
                 {{ t('file.placeholders', { list: filenamePlaceholders }) }} · {{ t('file.extension') }}

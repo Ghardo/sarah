@@ -19,6 +19,7 @@ Environment="SARAH_CERT_FILE="
 Environment="SARAH_KEY_FILE="
 Environment="TZ=UTC"
 Environment="SARAH_POST_SCAN_PROCESS=/home/pi/sarah/post-process.sh"
+Environment="SARAH_POLL_INTERVAL=50ms"
 
 [Install]
 

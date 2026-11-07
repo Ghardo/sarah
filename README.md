@@ -46,6 +46,26 @@ The Vite dev server proxies the API calls to the given sarah instance.
 | `SARAH_UI_ENABLED` | `true` | Serve the web UI at `/ui/` |
 | `SARAH_LOCALES_DIR` | `locales` | Additional language files for the web UI |
 
+### Fine tuning
+
+Everything that is not set per scan or watcher in the web UI. Durations as Go duration (`50ms`, `2s`, `1m`) or as a plain number in milliseconds. Invalid values stop the start, the message is in the log.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `SARAH_POLL_INTERVAL` | `50ms` | How often the scanner buttons are polled (at least `10ms`). Larger values may miss short presses |
+| `SARAH_SCAN_COOLDOWN` | `2s` | Pause of the button polling of a device after a watcher scan was triggered |
+| `SARAH_BUTTON_COOLDOWN` | `1s` | Debounce of a button without watcher, so a press is reported only once |
+| `SARAH_SENSOR_ERROR_LIMIT` | `5` | Consecutive errors reading the buttons after which the connection is reopened |
+| `SARAH_WATCHER_START_DELAY` | `5s` | Delay at startup before the saved watchers are loaded |
+| `SARAH_PREVIEW_RESOLUTION` | `75` | Resolution of the preview for the area selection in dpi (the driver picks the closest allowed value) |
+| `SARAH_JPEG_QUALITY` | `85` | JPEG quality if a scan or watcher does not set one; also the default in the web UI |
+| `SARAH_FILENAME_TEMPLATE` | `scan_{index}_{date}_{time}` | File name template if a scan or watcher does not set one; also the placeholder in the web UI |
+| `SARAH_DATE_FORMAT` | `20060102` | Format of `{date}` as [Go layout](https://pkg.go.dev/time#Layout), e.g. `2006-01-02` |
+| `SARAH_TIME_FORMAT` | `150405` | Format of `{time}` as Go layout, e.g. `15-04-05` |
+| `SARAH_FILE_MODE` | `0644` | Permissions of saved scans (octal), e.g. `0664` so paperless may delete them via the group |
+| `SARAH_DIR_MODE` | `0755` | Permissions of the scan directory if sarah creates it |
+| `SARAH_EVENTS_PING` | `25s` | Interval of the keep-alive pings in the event stream (`/events`), at least `1s` |
+
 ## Web UI
 
 Available at `http://<host>:7575/ui/` (browsers are redirected there from `/`). Disable it with `SARAH_UI_ENABLED=false`.
@@ -66,6 +86,7 @@ English and German are built in (`src/locales/`). More languages without rebuild
 | Method | Path | Description |
 | --- | --- | --- |
 | GET | `/version` | Version |
+| GET | `/defaults` | Defaults for the web UI (`filenameTemplate`, `jpegQuality`) |
 | GET | `/list` | Scanners |
 | GET | `/config?device=…` | Options of a scanner |
 | POST | `/scan` | Start a scan |
