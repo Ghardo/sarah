@@ -21,6 +21,8 @@ import (
 //   scan-failed      scanInfo (with error)
 //   button-pressed   {device, sensor, watcher}  watcher = whether a watcher exists for it
 //   watchers-changed {}
+//   post-processes-changed {}
+//   post-process-finished  {id, name, filename, ok, error, output}
 //   ping             every SARAH_EVENTS_PING (default 25 s), keeps proxies/browsers happy
 
 type serverEvent struct {

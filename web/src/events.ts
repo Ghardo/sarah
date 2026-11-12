@@ -12,6 +12,15 @@ export interface ScanInfo {
   error?: string
 }
 
+export interface PostProcessResult {
+  id: string
+  name: string
+  filename: string
+  ok: boolean
+  error?: string
+  output?: string
+}
+
 export interface ButtonPress {
   device: string
   sensor: string
@@ -34,12 +43,15 @@ const listeners = {
   failed: new Set<Listener<ScanInfo>>(),
   button: new Set<Listener<ButtonPress>>(),
   watchers: new Set<Listener<void>>(),
+  postProcesses: new Set<Listener<void>>(),
+  postProcessFinished: new Set<Listener<PostProcessResult>>(),
 }
 
 /** Subscribes to an event, returns an unsubscribe function. */
 export function onLive(kind: 'completed' | 'failed', fn: Listener<ScanInfo>): () => void
 export function onLive(kind: 'button', fn: Listener<ButtonPress>): () => void
-export function onLive(kind: 'watchers', fn: () => void): () => void
+export function onLive(kind: 'watchers' | 'postProcesses', fn: () => void): () => void
+export function onLive(kind: 'postProcessFinished', fn: Listener<PostProcessResult>): () => void
 export function onLive(kind: keyof typeof listeners, fn: Listener<never>): () => void {
   const set = listeners[kind] as unknown as Set<Listener<never>>
   set.add(fn)
@@ -99,4 +111,6 @@ export function connectEvents(): void {
     emit(listeners.button, press)
   })
   on<unknown>('watchers-changed', () => emit(listeners.watchers, undefined))
+  on<unknown>('post-processes-changed', () => emit(listeners.postProcesses, undefined))
+  on<PostProcessResult>('post-process-finished', (r) => emit(listeners.postProcessFinished, r))
 }
