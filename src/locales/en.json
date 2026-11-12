@@ -4,6 +4,7 @@
     "tabs": {
       "scan": "Scan",
       "watchers": "Watchers",
+      "postprocess": "Post-process",
       "devices": "Devices"
     },
     "scanner": "Scanner",
@@ -19,7 +20,8 @@
     "buttonNoWatcher": "Button “{button}” pressed – no watcher is set up for it.",
     "buttonScan": "Button “{button}” pressed – starting scan …",
     "scanDone": "Scan finished: {file}",
-    "scanFailed": "Scan failed: {error}"
+    "scanFailed": "Scan failed: {error}",
+    "postProcessFailed": "Post-process “{name}” failed for {file}: {error}"
   },
   "common": {
     "refresh": "Refresh",
@@ -112,6 +114,58 @@
     "noButtons": "This device does not report any buttons.",
     "picked": "Selected by pressing the button on the scanner.",
     "tip": "Tip: press a free button on the scanner to select it here."
+  },
+  "postprocess": {
+    "title": "Post-processes",
+    "new": "New post-process",
+    "edit": "Edit post-process",
+    "intro": "A post-process runs after every scan with the saved file. Scans and watchers each pick exactly one; the default is preselected.",
+    "empty": "No post-processes set up yet.",
+    "field": "Post-process",
+    "default": "default",
+    "none": "None",
+    "name": "Name",
+    "description": "Description",
+    "isDefault": "Default (preselected for new scans and watchers; at most one)",
+    "file": "File",
+    "noFile": "no file",
+    "missing": "file missing",
+    "pending": "uploaded on save",
+    "download": "Download",
+    "upload": "Upload …",
+    "uploadHint": "Any executable file: shell, Ruby or Python script (with shebang) or a binary. Uploading replaces the existing file, it is made executable automatically.",
+    "confirmDelete": "Delete post-process “{name}” including its file?",
+    "confirmOverwrite": "Overwrite the existing file “{file}”?",
+    "help": {
+      "title": "How a post-process is run",
+      "run": "After saving a scan, sarah starts the file of the selected post-process directly (no shell, no arguments). Everything is passed as environment variables:",
+      "dir": "Files and manifest.json live in SARAH_POST_PROCESS_DIR:",
+      "variable": "Variable",
+      "meaning": "Meaning",
+      "inherit": "The process also inherits sarah's complete environment, so variables from the systemd unit (e.g. PDF_TARGET_DIR) are passed on as well.",
+      "cwd": "The working directory is the post-process directory; relative paths in the script refer to it.",
+      "exit": "An exit code ≠ 0 counts as failure and is shown as a notification. stdout and stderr go to sarah's log (journalctl -u sarah).",
+      "serial": "Post-processes run one after another, never in parallel – handy for scripts that merge pages into one document.",
+      "deps": "Dependencies (img2pdf, ocrmypdf, Ruby gems …) must be checked or bundled by the file itself.",
+      "path": "PATH is the one of the service (under systemd only /usr/local/bin:/usr/bin …), .bashrc and profiles are not read. So call interpreters installed with mise, rbenv etc. by absolute path in the shebang, e.g. #!/usr/bin/env -S /home/<user>/.local/bin/mise exec ruby@3 -- ruby",
+      "select": "Selecting via API: field PostProcess in POST /scan or POST /watch – the process ID, \"none\" for none, omitted for the default."
+    },
+    "env": {
+      "SARAH_SCAN_DIR": "Scan directory (absolute)",
+      "SARAH_SCAN_FILENAME": "File name of the scan, e.g. scan_3_1_20261112_101500.png",
+      "SARAH_SCAN_PATH": "Full path of the scan",
+      "SARAH_SCAN_FORMAT": "png or jpeg",
+      "SARAH_SCAN_SOURCE": "api (web UI/API) or button (watcher)",
+      "SARAH_SCAN_DEVICE": "SANE device, e.g. genesys:libusb:001:003",
+      "SARAH_SCAN_SENSOR": "Button of the watcher (empty for api)",
+      "SARAH_SCAN_DOC": "Document counter {doc}",
+      "SARAH_SCAN_INDEX": "Page counter {index} within the document",
+      "SARAH_SCAN_NEW_DOC": "1 if this scan started a new document, otherwise 0",
+      "SARAH_POST_PROCESS_ID": "ID of the post-process",
+      "SARAH_POST_PROCESS_NAME": "Name of the post-process",
+      "SARAH_POST_PROCESS_DIR": "Post-process directory (absolute)",
+      "SARAH_VERSION": "sarah version"
+    }
   },
   "devices": {
     "scanners": "Scanners",

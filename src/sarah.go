@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec" // needed for SARAH_POST_SCAN_PROCESS
 	"path/filepath"
 	"strconv" // needed for counter conversion
 	"strings"
@@ -27,8 +26,9 @@ type ScanRequest struct {
 	WatchSensor string         `json:"WatchSensor,omitempty"`
 	Filename    string         `json:"Filename,omitempty"` // used as a template
 	NewDoc      bool           `json:"NewDoc,omitempty"`
-	Format      string         `json:"Format,omitempty"`  // "png" (default) or "jpeg"
-	Quality     int            `json:"Quality,omitempty"` // JPEG quality 1–100, default 85
+	Format      string         `json:"Format,omitempty"`      // "png" (default) or "jpeg"
+	Quality     int            `json:"Quality,omitempty"`     // JPEG quality 1–100, default 85
+	PostProcess string         `json:"PostProcess,omitempty"` // "" = default, "none" = none, else the ID (postprocess.go)
 	Options     map[string]any `json:"Options"`
 }
 
@@ -45,6 +45,8 @@ type Config struct {
 	UIEnabled bool
 	// Additional language files for the web UI (SARAH_LOCALES_DIR, default: ./locales)
 	LocalesDir string
+	// Directory of the post-processes including manifest.json (SARAH_POST_PROCESS_DIR, default: ./post-process)
+	PostProcessDir string
 }
 
 var (
@@ -67,7 +69,7 @@ var (
 	watcherConns     = make(map[string]*sane.Conn)
 )
 
-const version = "2.8.0"
+const version = "2.9.0"
 
 func main() {
 	cfg, err := loadConfig()
@@ -88,6 +90,10 @@ func main() {
 		log.Fatalf("Failed to initialize SANE: %v", err)
 	}
 	defer sane.Exit()
+
+	if err := initPostProcesses(cfg.PostProcessDir); err != nil {
+		log.Fatalf("Failed to initialize post-processes: %v", err)
+	}
 
 	// Load saved watchers
 	initializePersistentWatchers(cfg.ScanDir)
@@ -119,6 +125,7 @@ func main() {
 	router.POST("/preview", previewHandler)
 	router.GET("/preview/last", getLastScan)
 	router.GET("/events", eventsHandler)
+	registerPostProcessRoutes(router)
 
 	if cfg.UIEnabled {
 		uiActive = registerUI(router)
@@ -268,7 +275,6 @@ func stopAllWatchers(c *gin.Context) {
 
 // globalWatcherLoop: this ONE goroutine polls all active watchers one after another.
 func globalWatcherLoop(scanDir string, pollInterval time.Duration) {
-	postScanScript := os.Getenv("SARAH_POST_SCAN_PROCESS")
 	cooldowns := make(map[string]time.Time)
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
@@ -442,7 +448,7 @@ func globalWatcherLoop(scanDir string, pollInterval time.Duration) {
 					deviceCooldowns[device] = time.Now().Add(settings.ScanCooldown)
 
 					log.Printf("Executing scan for watcher: %s", watcherKey)
-					go executeWatchedScan(req, scanDir, postScanScript, watcherKey)
+					go executeWatchedScan(req, scanDir, watcherKey)
 				} else {
 					// Only log, keep the connection open!
 					cooldowns[watcherKey] = time.Now().Add(settings.ButtonCooldown)
@@ -454,7 +460,7 @@ func globalWatcherLoop(scanDir string, pollInterval time.Duration) {
 }
 
 // executeWatchedScan: scan logic started as a goroutine.
-func executeWatchedScan(sr ScanRequest, scanDir string, postScanScript string, watcherKey string) {
+func executeWatchedScan(sr ScanRequest, scanDir string, watcherKey string) {
 	scan := beginScan(sr.Device, "button", sr.WatchSensor)
 
 	// Older or hand-edited watchers.json: validate the format here as well
@@ -475,7 +481,7 @@ func executeWatchedScan(sr ScanRequest, scanDir string, postScanScript string, w
 
 	go func() {
 		// File name logic
-		filename := generateFilename(sr)
+		filename, doc, index := generateFilename(sr)
 		filePath := filepath.Join(scanDir, filename)
 
 		if err := writeScanFile(filePath, imgBytes); err != nil {
@@ -488,12 +494,11 @@ func executeWatchedScan(sr ScanRequest, scanDir string, postScanScript string, w
 		storeLastScan(filename, imgBytes, formatMime(sr.Format))
 		scan.done(filename, imgBytes)
 
-		if postScanScript != "" {
-			log.Printf("Watcher (%s): Executing post-scan process: %s", watcherKey, postScanScript)
-			executePostScanScript(postScanScript, scanDir, filename)
-		} else {
-			log.Printf("Watcher (%s): No post-scan process configured.", watcherKey)
-		}
+		runPostProcess(sr.PostProcess, postProcessJob{
+			ScanDir: scanDir, Filename: filename, Format: sr.Format,
+			Source: "button", Device: sr.Device, Sensor: sr.WatchSensor,
+			Doc: doc, Index: index, NewDoc: sr.NewDoc,
+		})
 	}()
 }
 
@@ -568,32 +573,10 @@ func saveWatchersToFile(configs map[string]ScanRequest) error {
 	return os.WriteFile(watcherConfigFile, data, 0644)
 }
 
-// --- Post-processing ---
-func executePostScanScript(scriptPath string, scanDir string, filename string) {
-	log.Printf("Starting post-scan script execution: %s", scriptPath)
-
-	cmd := exec.Command(scriptPath)
-	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, fmt.Sprintf("SARAH_SCAN_DIR=%s", scanDir))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("SARAH_SCAN_FILENAME=%s", filename))
-
-	output, err := cmd.CombinedOutput()
-
-	outStr := strings.TrimSpace(string(output))
-	if outStr == "" {
-		outStr = "<no output>"
-	}
-
-	if err != nil {
-		log.Printf("ERROR: Post-scan script '%s' failed: %v. Output: %s", scriptPath, err, outStr)
-	} else {
-		log.Printf("INFO: Post-scan script '%s' finished successfully. Output: %s", scriptPath, outStr)
-	}
-}
-
 // --- Central function for building file names ---
 // generateFilename treats filenameTemplate as a template and replaces placeholders.
-func generateFilename(sr ScanRequest) string {
+// It also returns the counters {doc} and {index} that were used.
+func generateFilename(sr ScanRequest) (string, int, int) {
 	// 1. Get the dynamic values
 	counterMutex.Lock()
 	if sr.NewDoc {
@@ -640,7 +623,7 @@ func generateFilename(sr ScanRequest) string {
 	result = strings.ReplaceAll(result, "{doc}", docStr)
 
 	// 5. Append the extension matching the format
-	return result + formatExt(sr.Format)
+	return result + formatExt(sr.Format), docIndex, index
 }
 
 // --- HTTP handlers ---
@@ -697,8 +680,6 @@ func listDevices(c *gin.Context) {
 }
 
 func scanHandler(scanDir string) gin.HandlerFunc {
-	postScanScript := os.Getenv("SARAH_POST_SCAN_PROCESS")
-
 	return func(c *gin.Context) {
 		var sr ScanRequest
 		if err := c.ShouldBindJSON(&sr); err != nil {
@@ -720,8 +701,7 @@ func scanHandler(scanDir string) gin.HandlerFunc {
 			return
 		}
 
-		// --- Use the template logic ---
-		filename := generateFilename(sr)
+		filename, doc, index := generateFilename(sr)
 		filePath := filepath.Join(scanDir, filename)
 
 		if err := writeScanFile(filePath, imgBytes); err != nil {
@@ -734,10 +714,11 @@ func scanHandler(scanDir string) gin.HandlerFunc {
 		storeLastScan(filename, imgBytes, formatMime(sr.Format))
 		scan.done(filename, imgBytes)
 
-		if postScanScript != "" {
-			log.Printf("Executing post-scan process: %s", postScanScript)
-			go executePostScanScript(postScanScript, scanDir, filename)
-		}
+		go runPostProcess(sr.PostProcess, postProcessJob{
+			ScanDir: scanDir, Filename: filename, Format: sr.Format,
+			Source: "api", Device: sr.Device,
+			Doc: doc, Index: index, NewDoc: sr.NewDoc,
+		})
 
 		imgConfig, _, err := image.DecodeConfig(bytes.NewReader(imgBytes))
 		if err != nil {
@@ -806,6 +787,7 @@ func loadConfig() (Config, error) {
 		WatcherConfigPath: getEnv("SARAH_WATCHER_CONFIG", "watchers.json"),
 		UIEnabled:         uiEnabled,
 		LocalesDir:        getEnv("SARAH_LOCALES_DIR", "locales"),
+		PostProcessDir:    getEnv("SARAH_POST_PROCESS_DIR", "post-process"),
 	}
 	if cfg.UseTLS && (cfg.CertFile == "" || cfg.KeyFile == "") {
 		return Config{}, errors.New("SARAH_USE_TLS is true, but SARAH_CERT_FILE or SARAH_KEY_FILE are not set")

@@ -1,5 +1,5 @@
 import { t } from './i18n'
-import type { Device, SaneOption, ScanRequest, ScanResult, WatcherStatus } from './types'
+import type { Device, PostProcess, PostProcessInput, SaneOption, ScanRequest, ScanResult, WatcherStatus } from './types'
 
 export class ApiError extends Error {
   readonly status: number
@@ -108,6 +108,31 @@ export const api = {
       throw new ApiError(res.status, msg)
     }
     return res.blob()
+  },
+
+  async postProcesses(): Promise<{ processes: PostProcess[]; dir: string }> {
+    const res = await request<{ processes: PostProcess[] | null; dir?: string }>('GET', '/post-process')
+    return { processes: res.processes ?? [], dir: res.dir ?? '' }
+  },
+  createPostProcess: (p: PostProcessInput) => request<PostProcess>('POST', '/post-process', p),
+  updatePostProcess: (id: string, p: PostProcessInput) =>
+    request<PostProcess>('PUT', `/post-process/${encodeURIComponent(id)}`, p),
+  deletePostProcess: (id: string) => request<unknown>('DELETE', `/post-process/${encodeURIComponent(id)}`),
+  postProcessFileUrl: (id: string) => `/post-process/${encodeURIComponent(id)}/file`,
+
+  /** Uploads the file of a post-process, replacing the existing one. */
+  async uploadPostProcess(id: string, file: File): Promise<PostProcess> {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    let res: Response
+    try {
+      res = await fetch(`/post-process/${encodeURIComponent(id)}/file`, { method: 'PUT', body: form })
+    } catch {
+      throw new ApiError(0, t('errors.unreachable'))
+    }
+    const data = (await res.json().catch(() => null)) as (PostProcess & { error?: string }) | null
+    if (!res.ok) throw new ApiError(res.status, data?.error ?? `${res.status} ${res.statusText}`)
+    return data as PostProcess
   },
 
   /** Last scan from sarah's memory (independent of the post-scan script). */

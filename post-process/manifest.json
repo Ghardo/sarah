@@ -1,0 +1,11 @@
+{
+  "processes": [
+    {
+      "id": "example",
+      "name": "Example",
+      "description": "Does nothing. Replace the file with your own script or binary.",
+      "default": true,
+      "file": "post-process.sh"
+    }
+  ]
+}
