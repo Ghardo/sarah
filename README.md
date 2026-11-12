@@ -6,6 +6,8 @@ REST API for SANE scanners with scanner button watching and a web UI. Meant as a
 
 Documentation: see the [wiki](https://github.com/Ghardo/sarah/wiki).
 
+> **Testers welcome:** sarah has only been tested with a Canon CanoScan LiDE 220 so far. If you run it with another scanner (or another board than a Raspberry Pi 4), please open an issue and tell whether scanning and the buttons work.
+
 ## Build
 
 Requirements: [mise](https://mise.jdx.dev) (Go, Node, pnpm as defined in `mise.toml`) and Docker or Podman. sarah uses cgo (`libsane`), so every target architecture is cross compiled in its own builder container.
