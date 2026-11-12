@@ -1,6 +1,6 @@
 # Builder image for cross compiling sarah (cgo against libsane).
 # One image per target architecture: TARGET = arm64 | armv7 | amd64
-#   podman build --build-arg TARGET=arm64 -t sarah-builder-arm64 .
+#   docker build --build-arg TARGET=arm64 -t sarah-builder-arm64 .
 #
 # Bookworm (Debian 12): working repositories, and the glibc of the binary
 # (2.36) matches Raspberry Pi OS Bookworm. Targets need glibc >= 2.36.

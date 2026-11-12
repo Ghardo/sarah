@@ -8,7 +8,7 @@ Documentation: see the [wiki](https://github.com/Ghardo/sarah/wiki).
 
 ## Build
 
-Requirements: [mise](https://mise.jdx.dev) (Go, Node, pnpm as defined in `mise.toml`) and Podman. sarah uses cgo (`libsane`), so every target architecture is cross compiled in its own builder container.
+Requirements: [mise](https://mise.jdx.dev) (Go, Node, pnpm as defined in `mise.toml`) and Docker or Podman. sarah uses cgo (`libsane`), so every target architecture is cross compiled in its own builder container.
 
 | Target | Binary | Runs on |
 | --- | --- | --- |
@@ -21,6 +21,8 @@ mise run build:arm64   # one target: web UI, builder image, binary
 mise run build         # all targets
 ```
 
+Docker is used by default; for Podman set `CONTAINER=podman` (e.g. `CONTAINER=podman mise run build`, or put it into a `mise.local.toml`).
+
 The builder images are based on Debian Bookworm, so the target needs glibc 2.36 or newer (Raspberry Pi OS / Debian 12 Bookworm, Ubuntu 23.04 and newer) and `libsane` installed. Pi 1 and Zero (ARMv6) are not supported.
 
 Separately:
@@ -29,7 +31,7 @@ Separately:
 mise run ui              # web UI only (web/ -> src/ui/dist)
 mise run builder:arm64   # builder image only (sarah-builder-<target>)
 mise run vendor          # go mod vendor
-podman run --rm -v ./:/app:Z sarah-builder-arm64 sh ./build.sh   # binary only
+docker run --rm -v "$PWD:/app:Z" sarah-builder-arm64 sh ./build.sh   # binary only
 ```
 
 The binary also runs without a built web UI; `/ui/` is just unavailable then.

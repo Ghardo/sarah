@@ -5,6 +5,8 @@ pnpm = "10"
 
 [env]
 GOCACHE = "{{config_root}}/.cache"
+# Container tool for the builder: docker (default) or podman, e.g. CONTAINER=podman mise run build
+CONTAINER = "{{ get_env(name='CONTAINER', default='docker') }}"
 
 # Targets (binary in dist/sarah-linux-<target>):
 #   arm64  Raspberry Pi 3/4/5 and Zero 2 W with 64-bit OS, any other arm64 Linux
@@ -22,30 +24,30 @@ run = "go mod vendor"
 
 [tasks."builder:arm64"]
 description = "Create the builder image for arm64"
-run = "podman build --build-arg TARGET=arm64 -t sarah-builder-arm64 ."
+run = "{{env.CONTAINER}} build --build-arg TARGET=arm64 -t sarah-builder-arm64 ."
 
 [tasks."builder:armv7"]
 description = "Create the builder image for armv7 (32-bit Raspberry Pi OS)"
-run = "podman build --build-arg TARGET=armv7 -t sarah-builder-armv7 ."
+run = "{{env.CONTAINER}} build --build-arg TARGET=armv7 -t sarah-builder-armv7 ."
 
 [tasks."builder:amd64"]
 description = "Create the builder image for amd64"
-run = "podman build --build-arg TARGET=amd64 -t sarah-builder-amd64 ."
+run = "{{env.CONTAINER}} build --build-arg TARGET=amd64 -t sarah-builder-amd64 ."
 
 [tasks."build:arm64"]
 description = "Build dist/sarah-linux-arm64 (Raspberry Pi 3/4/5 64-bit, arm64 Linux)"
 depends = ["ui", "vendor", "builder:arm64"]
-run = "podman run --rm -v ./:/app:Z sarah-builder-arm64 sh ./build.sh"
+run = "{{env.CONTAINER}} run --rm -v \"{{config_root}}:/app:Z\" sarah-builder-arm64 sh ./build.sh"
 
 [tasks."build:armv7"]
 description = "Build dist/sarah-linux-armv7 (Raspberry Pi with 32-bit OS)"
 depends = ["ui", "vendor", "builder:armv7"]
-run = "podman run --rm -v ./:/app:Z sarah-builder-armv7 sh ./build.sh"
+run = "{{env.CONTAINER}} run --rm -v \"{{config_root}}:/app:Z\" sarah-builder-armv7 sh ./build.sh"
 
 [tasks."build:amd64"]
 description = "Build dist/sarah-linux-amd64 (64-bit x86 Linux)"
 depends = ["ui", "vendor", "builder:amd64"]
-run = "podman run --rm -v ./:/app:Z sarah-builder-amd64 sh ./build.sh"
+run = "{{env.CONTAINER}} run --rm -v \"{{config_root}}:/app:Z\" sarah-builder-amd64 sh ./build.sh"
 
 [tasks.build]
 description = "Build the binaries for all targets"

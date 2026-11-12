@@ -13,4 +13,6 @@ case "$TARGET" in
 esac
 mkdir -p dist
 go build -mod=vendor -a -ldflags="-w -s" -o "./dist/sarah-linux-$TARGET" ./src
+# Docker runs as root: hand the output back to the owner of the project directory
+chown -R "$(stat -c %u:%g /app)" dist .cache 2>/dev/null || true
 echo "built dist/sarah-linux-$TARGET"
