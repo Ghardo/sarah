@@ -147,6 +147,7 @@
       "exit": "An exit code ≠ 0 counts as failure and is shown as a notification. stdout and stderr go to sarah's log (journalctl -u sarah).",
       "serial": "Post-processes run one after another, never in parallel – handy for scripts that merge pages into one document.",
       "deps": "Dependencies (img2pdf, ocrmypdf, Ruby gems …) must be checked or bundled by the file itself.",
+      "path": "PATH is the one of the service (under systemd only /usr/local/bin:/usr/bin …), .bashrc and profiles are not read. So call interpreters installed with mise, rbenv etc. by absolute path in the shebang, e.g. #!/usr/bin/env -S /home/<user>/.local/bin/mise exec ruby@3 -- ruby",
       "select": "Selecting via API: field PostProcess in POST /scan or POST /watch – the process ID, \"none\" for none, omitted for the default."
     },
     "env": {

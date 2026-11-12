@@ -147,6 +147,7 @@
       "exit": "Exit-Code ≠ 0 gilt als Fehler und wird als Hinweis angezeigt. stdout und stderr landen im Log von sarah (journalctl -u sarah).",
       "serial": "Post-Processes laufen nacheinander, nie parallel – gut für Skripte, die Seiten zu einem Dokument zusammenführen.",
       "deps": "Abhängigkeiten (img2pdf, ocrmypdf, Ruby-Gems …) muss die Datei selbst prüfen bzw. mitbringen.",
+      "path": "PATH ist der des Dienstes (unter systemd nur /usr/local/bin:/usr/bin …), .bashrc und Profile werden nicht gelesen. Über mise, rbenv o. Ä. installierte Interpreter deshalb im Shebang absolut aufrufen, z. B. #!/usr/bin/env -S /home/<user>/.local/bin/mise exec ruby@3 -- ruby",
       "select": "Auswahl per API: Feld PostProcess in POST /scan bzw. POST /watch – ID des Process, \"none\" für keinen, ohne Angabe der Default."
     },
     "env": {

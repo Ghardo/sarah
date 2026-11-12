@@ -286,6 +286,7 @@ const envVars = [
         <li>{{ t('postprocess.help.exit') }}</li>
         <li>{{ t('postprocess.help.serial') }}</li>
         <li>{{ t('postprocess.help.deps') }}</li>
+        <li>{{ t('postprocess.help.path') }}</li>
         <li>{{ t('postprocess.help.select') }}</li>
       </ul>
     </section>

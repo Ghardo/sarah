@@ -96,7 +96,15 @@ The file is started without arguments, the working directory is `SARAH_POST_PROC
 | `SARAH_POST_PROCESS_ID`, `SARAH_POST_PROCESS_NAME`, `SARAH_POST_PROCESS_DIR` | Details of the process |
 | `SARAH_VERSION` | sarah version |
 
-Post-processes run one after another, never in parallel. An exit code ≠ 0 counts as failure (log and notification in the web UI). Dependencies have to be bundled or checked by the file itself. `SARAH_POST_SCAN_PROCESS` is no longer used: move the script into `SARAH_POST_PROCESS_DIR` and add it to `manifest.json` (or create it in the web UI).
+Post-processes run one after another, never in parallel. An exit code ≠ 0 counts as failure (log and notification in the web UI). Dependencies have to be bundled or checked by the file itself.
+
+`PATH` is the one of the service (under systemd only `/usr/local/bin:/usr/bin` …), `.bashrc` and profiles are not read. So call interpreters installed with mise, rbenv etc. by absolute path in the shebang:
+
+```ruby
+#!/usr/bin/env -S /home/<user>/.local/bin/mise exec ruby@3 -- ruby
+```
+
+`SARAH_POST_SCAN_PROCESS` is no longer used: move the script into `SARAH_POST_PROCESS_DIR` and add it to `manifest.json` (or create it in the web UI).
 
 ## Web UI
 
