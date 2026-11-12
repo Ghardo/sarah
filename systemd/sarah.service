@@ -7,7 +7,7 @@ Type=simple
 User=pi
 Group=scanner
 WorkingDirectory=/home/pi/sarah
-ExecStart=/home/pi/sarah/sarah-pi4
+ExecStart=/home/pi/sarah/sarah
 Restart=on-failure
 RestartSec=5
 Environment="SARAH_PORT=7575"

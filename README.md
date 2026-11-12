@@ -8,21 +8,33 @@ Documentation: see the [wiki](https://github.com/Ghardo/sarah/wiki).
 
 ## Build
 
-Requirements: [mise](https://mise.jdx.dev) (Go, Node, pnpm as defined in `mise.toml`) and Podman.
+Requirements: [mise](https://mise.jdx.dev) (Go, Node, pnpm as defined in `mise.toml`) and Podman. sarah uses cgo (`libsane`), so every target architecture is cross compiled in its own builder container.
+
+| Target | Binary | Runs on |
+| --- | --- | --- |
+| `arm64` | `dist/sarah-linux-arm64` | Raspberry Pi 3, 4, 5, Zero 2 W with 64-bit OS, any other arm64 Linux |
+| `armv7` | `dist/sarah-linux-armv7` | Raspberry Pi 2, 3, 4, 5 with 32-bit OS (armhf) |
+| `amd64` | `dist/sarah-linux-amd64` | 64-bit x86 Linux |
 
 ```sh
-mise run builder   # once: create the builder image for arm64
-mise run build     # build the web UI and create sarah-pi4
+mise run build:arm64   # one target: web UI, builder image, binary
+mise run build         # all targets
 ```
+
+The builder images are based on Debian Bookworm, so the target needs glibc 2.36 or newer (Raspberry Pi OS / Debian 12 Bookworm, Ubuntu 23.04 and newer) and `libsane` installed. Pi 1 and Zero (ARMv6) are not supported.
 
 Separately:
 
 ```sh
-mise run ui        # web UI only (web/ -> src/ui/dist)
-podman run --rm -v ./:/app:Z sarah-builder sh ./build-pi.sh   # binary only
+mise run ui              # web UI only (web/ -> src/ui/dist)
+mise run builder:arm64   # builder image only (sarah-builder-<target>)
+mise run vendor          # go mod vendor
+podman run --rm -v ./:/app:Z sarah-builder-arm64 sh ./build.sh   # binary only
 ```
 
 The binary also runs without a built web UI; `/ui/` is just unavailable then.
+
+On the target, copy the binary as `sarah` (e.g. `/home/pi/sarah/sarah`, see `systemd/sarah.service`).
 
 ### Developing the web UI
 

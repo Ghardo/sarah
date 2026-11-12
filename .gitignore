@@ -1,6 +1,7 @@
 .cache/
 vendor/
 sarah-pi4
+dist/
 
 src/ui/dist/
 web/node_modules/

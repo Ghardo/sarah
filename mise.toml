@@ -6,16 +6,47 @@ pnpm = "10"
 [env]
 GOCACHE = "{{config_root}}/.cache"
 
-[tasks.builder]
-description = "Create the builder image for the Pi 4 (arm64)"
-run = "podman build -t sarah-builder ."
+# Targets (binary in dist/sarah-linux-<target>):
+#   arm64  Raspberry Pi 3/4/5 and Zero 2 W with 64-bit OS, any other arm64 Linux
+#   armv7  Raspberry Pi 2/3/4/5 with 32-bit OS (armhf)
+#   amd64  normal 64-bit x86 Linux
 
 [tasks.ui]
 description = "Build the web UI (goes to src/ui/dist and is embedded into the binary)"
 dir = "{{config_root}}/web"
 run = ["pnpm install --frozen-lockfile", "pnpm build"]
 
+[tasks.vendor]
+description = "Vendor the Go modules (vendor/ is used by the container build)"
+run = "go mod vendor"
+
+[tasks."builder:arm64"]
+description = "Create the builder image for arm64"
+run = "podman build --build-arg TARGET=arm64 -t sarah-builder-arm64 ."
+
+[tasks."builder:armv7"]
+description = "Create the builder image for armv7 (32-bit Raspberry Pi OS)"
+run = "podman build --build-arg TARGET=armv7 -t sarah-builder-armv7 ."
+
+[tasks."builder:amd64"]
+description = "Create the builder image for amd64"
+run = "podman build --build-arg TARGET=amd64 -t sarah-builder-amd64 ."
+
+[tasks."build:arm64"]
+description = "Build dist/sarah-linux-arm64 (Raspberry Pi 3/4/5 64-bit, arm64 Linux)"
+depends = ["ui", "vendor", "builder:arm64"]
+run = "podman run --rm -v ./:/app:Z sarah-builder-arm64 sh ./build.sh"
+
+[tasks."build:armv7"]
+description = "Build dist/sarah-linux-armv7 (Raspberry Pi with 32-bit OS)"
+depends = ["ui", "vendor", "builder:armv7"]
+run = "podman run --rm -v ./:/app:Z sarah-builder-armv7 sh ./build.sh"
+
+[tasks."build:amd64"]
+description = "Build dist/sarah-linux-amd64 (64-bit x86 Linux)"
+depends = ["ui", "vendor", "builder:amd64"]
+run = "podman run --rm -v ./:/app:Z sarah-builder-amd64 sh ./build.sh"
+
 [tasks.build]
-description = "Build the web UI and the binary for the Pi 4 (sarah-pi4)"
-depends = ["ui"]
-run = "podman run --rm -v ./:/app:Z sarah-builder sh ./build-pi.sh"
+description = "Build the binaries for all targets"
+depends = ["build:arm64", "build:armv7", "build:amd64"]
