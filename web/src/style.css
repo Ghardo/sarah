@@ -306,6 +306,7 @@ button.danger:hover:not(:disabled) {
 /* --- Forms --- */
 
 select,
+textarea,
 input[type='text'],
 input[type='number'] {
   font: inherit;
@@ -324,6 +325,7 @@ select.compact,
   font-size: 0.9rem;
 }
 select:focus,
+textarea:focus,
 input:focus {
   outline: 2px solid var(--accent-soft);
   border-color: var(--accent);
@@ -734,6 +736,51 @@ select.picked {
 }
 .options-table tr.inactive td {
   color: var(--muted);
+}
+
+/* --- Post-Process --- */
+
+textarea {
+  resize: vertical;
+}
+.badge.error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.pp-desc {
+  word-break: normal;
+  white-space: pre-line;
+}
+.field .label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.pp-file {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  word-break: break-all;
+}
+.pp-file-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+.pp-help p {
+  margin: 0 0 0.6rem;
+}
+.pp-help code {
+  word-break: break-all;
+}
+.pp-notes {
+  margin: 0.9rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  display: grid;
+  gap: 0.3rem;
 }
 
 /* --- Toasts --- */

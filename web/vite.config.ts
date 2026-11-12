@@ -2,7 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 // API paths the dev server forwards to sarah
-const apiPaths = ['/version', '/list', '/config', '/scan', '/watch', '/preview', '/events', '/i18n']
+const apiPaths = ['/version', '/list', '/config', '/scan', '/watch', '/preview', '/events', '/i18n', '/post-process']
 
 export default defineConfig(({ mode }) => {
   // Target for "pnpm dev", e.g. SARAH_API=http://raspberrypi.local:7575 pnpm dev

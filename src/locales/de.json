@@ -4,6 +4,7 @@
     "tabs": {
       "scan": "Scannen",
       "watchers": "Watcher",
+      "postprocess": "Post-Process",
       "devices": "Geräte"
     },
     "scanner": "Scanner",
@@ -19,7 +20,8 @@
     "buttonNoWatcher": "Taste „{button}“ gedrückt – dafür ist kein Watcher eingerichtet.",
     "buttonScan": "Taste „{button}“ gedrückt – Scan startet …",
     "scanDone": "Scan fertig: {file}",
-    "scanFailed": "Scan fehlgeschlagen: {error}"
+    "scanFailed": "Scan fehlgeschlagen: {error}",
+    "postProcessFailed": "Post-Process „{name}“ für {file} fehlgeschlagen: {error}"
   },
   "common": {
     "refresh": "Aktualisieren",
@@ -112,6 +114,58 @@
     "noButtons": "Dieses Gerät meldet keine Tasten.",
     "picked": "Per Tastendruck am Scanner ausgewählt.",
     "tip": "Tipp: Eine freie Taste am Scanner drücken, um sie hier auszuwählen."
+  },
+  "postprocess": {
+    "title": "Post-Processes",
+    "new": "Neuer Post-Process",
+    "edit": "Post-Process bearbeiten",
+    "intro": "Ein Post-Process läuft nach jedem Scan mit der gespeicherten Datei. Scans und Watcher wählen jeweils genau einen aus; der Default ist vorausgewählt.",
+    "empty": "Noch keine Post-Processes angelegt.",
+    "field": "Post-Process",
+    "default": "Default",
+    "none": "Keiner",
+    "name": "Name",
+    "description": "Beschreibung",
+    "isDefault": "Default (bei neuen Scans und Watchern vorausgewählt; höchstens einer)",
+    "file": "Datei",
+    "noFile": "keine Datei",
+    "missing": "Datei fehlt",
+    "pending": "wird beim Speichern hochgeladen",
+    "download": "Herunterladen",
+    "upload": "Hochladen …",
+    "uploadHint": "Beliebige ausführbare Datei: Shell-, Ruby-, Python-Skript (mit Shebang) oder Binary. Hochladen überschreibt die vorhandene Datei, sie wird automatisch ausführbar gemacht.",
+    "confirmDelete": "Post-Process „{name}“ samt Datei löschen?",
+    "confirmOverwrite": "Vorhandene Datei „{file}“ überschreiben?",
+    "help": {
+      "title": "So wird ein Post-Process ausgeführt",
+      "run": "Nach dem Speichern eines Scans startet sarah die Datei des gewählten Post-Process direkt (ohne Shell, ohne Argumente). Alle Angaben kommen über Umgebungsvariablen:",
+      "dir": "Dateien und manifest.json liegen in SARAH_POST_PROCESS_DIR:",
+      "variable": "Variable",
+      "meaning": "Bedeutung",
+      "inherit": "Zusätzlich erbt der Process die komplette Umgebung von sarah – Variablen aus der systemd-Unit (z. B. PDF_TARGET_DIR) kommen also auch an.",
+      "cwd": "Arbeitsverzeichnis ist das Post-Process-Verzeichnis, relative Pfade im Skript beziehen sich darauf.",
+      "exit": "Exit-Code ≠ 0 gilt als Fehler und wird als Hinweis angezeigt. stdout und stderr landen im Log von sarah (journalctl -u sarah).",
+      "serial": "Post-Processes laufen nacheinander, nie parallel – gut für Skripte, die Seiten zu einem Dokument zusammenführen.",
+      "deps": "Abhängigkeiten (img2pdf, ocrmypdf, Ruby-Gems …) muss die Datei selbst prüfen bzw. mitbringen.",
+      "path": "PATH ist der des Dienstes (unter systemd nur /usr/local/bin:/usr/bin …), .bashrc und Profile werden nicht gelesen. Über mise, rbenv o. Ä. installierte Interpreter deshalb im Shebang absolut aufrufen, z. B. #!/usr/bin/env -S /home/<user>/.local/bin/mise exec ruby@3 -- ruby",
+      "select": "Auswahl per API: Feld PostProcess in POST /scan bzw. POST /watch – ID des Process, \"none\" für keinen, ohne Angabe der Default."
+    },
+    "env": {
+      "SARAH_SCAN_DIR": "Scan-Verzeichnis (absolut)",
+      "SARAH_SCAN_FILENAME": "Dateiname des Scans, z. B. scan_3_1_20261112_101500.png",
+      "SARAH_SCAN_PATH": "Vollständiger Pfad des Scans",
+      "SARAH_SCAN_FORMAT": "png oder jpeg",
+      "SARAH_SCAN_SOURCE": "api (Web-UI/API) oder button (Watcher)",
+      "SARAH_SCAN_DEVICE": "SANE-Gerät, z. B. genesys:libusb:001:003",
+      "SARAH_SCAN_SENSOR": "Taste des Watchers (leer bei api)",
+      "SARAH_SCAN_DOC": "Dokumentzähler {doc}",
+      "SARAH_SCAN_INDEX": "Seitenzähler {index} im Dokument",
+      "SARAH_SCAN_NEW_DOC": "1, wenn mit diesem Scan ein neues Dokument begonnen wurde, sonst 0",
+      "SARAH_POST_PROCESS_ID": "ID des Post-Process",
+      "SARAH_POST_PROCESS_NAME": "Name des Post-Process",
+      "SARAH_POST_PROCESS_DIR": "Post-Process-Verzeichnis (absolut)",
+      "SARAH_VERSION": "Version von sarah"
+    }
   },
   "devices": {
     "scanners": "Scanner",

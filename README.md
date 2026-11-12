@@ -40,7 +40,7 @@ The Vite dev server proxies the API calls to the given sarah instance.
 | `SARAH_PORT` | `7575` | Port |
 | `SARAH_SCAN_DIR` | `scans` | Target directory for scans |
 | `SARAH_WATCHER_CONFIG` | `watchers.json` | Saved watchers |
-| `SARAH_POST_SCAN_PROCESS` | – | Script run after every scan (`SARAH_SCAN_DIR`, `SARAH_SCAN_FILENAME` in the environment) |
+| `SARAH_POST_PROCESS_DIR` | `post-process` | Post-processes including `manifest.json` (see [Post-processes](#post-processes)) |
 | `SARAH_ALLOWED_ORIGINS` | `*` | CORS, comma separated |
 | `SARAH_USE_TLS`, `SARAH_CERT_FILE`, `SARAH_KEY_FILE` | `false` | TLS |
 | `SARAH_UI_ENABLED` | `true` | Serve the web UI at `/ui/` |
@@ -65,6 +65,46 @@ Everything that is not set per scan or watcher in the web UI. Durations as Go du
 | `SARAH_FILE_MODE` | `0644` | Permissions of saved scans (octal), e.g. `0664` so paperless may delete them via the group |
 | `SARAH_DIR_MODE` | `0755` | Permissions of the scan directory if sarah creates it |
 | `SARAH_EVENTS_PING` | `25s` | Interval of the keep-alive pings in the event stream (`/events`), at least `1s` |
+
+## Post-processes
+
+After every scan a post-process can run – any executable file (shell, Ruby or Python script with a shebang, or a binary). They are managed in the web UI on the "Post-process" tab (name, description, default, file with download/upload). Scans and watchers each pick exactly one; the default is preselected.
+
+Everything lives in `SARAH_POST_PROCESS_DIR`, the metadata in `manifest.json`:
+
+```json
+{
+  "processes": [
+    { "id": "example", "name": "Example", "description": "…", "default": true, "file": "post-process.sh" }
+  ]
+}
+```
+
+The file is started without arguments, the working directory is `SARAH_POST_PROCESS_DIR`. It inherits sarah's environment and additionally gets:
+
+| Variable | Meaning |
+| --- | --- |
+| `SARAH_SCAN_DIR` | Scan directory (absolute) |
+| `SARAH_SCAN_FILENAME` | File name of the scan |
+| `SARAH_SCAN_PATH` | Full path of the scan |
+| `SARAH_SCAN_FORMAT` | `png` or `jpeg` |
+| `SARAH_SCAN_SOURCE` | `api` or `button` |
+| `SARAH_SCAN_DEVICE` | SANE device |
+| `SARAH_SCAN_SENSOR` | Button of the watcher (empty for `api`) |
+| `SARAH_SCAN_DOC`, `SARAH_SCAN_INDEX` | Counters `{doc}` and `{index}` |
+| `SARAH_SCAN_NEW_DOC` | `1` if the scan started a new document |
+| `SARAH_POST_PROCESS_ID`, `SARAH_POST_PROCESS_NAME`, `SARAH_POST_PROCESS_DIR` | Details of the process |
+| `SARAH_VERSION` | sarah version |
+
+Post-processes run one after another, never in parallel. An exit code ≠ 0 counts as failure (log and notification in the web UI). Dependencies have to be bundled or checked by the file itself.
+
+`PATH` is the one of the service (under systemd only `/usr/local/bin:/usr/bin` …), `.bashrc` and profiles are not read. So call interpreters installed with mise, rbenv etc. by absolute path in the shebang:
+
+```ruby
+#!/usr/bin/env -S /home/<user>/.local/bin/mise exec ruby@3 -- ruby
+```
+
+`SARAH_POST_SCAN_PROCESS` is no longer used: move the script into `SARAH_POST_PROCESS_DIR` and add it to `manifest.json` (or create it in the web UI).
 
 ## Web UI
 
@@ -96,14 +136,18 @@ English and German are built in (`src/locales/`). More languages without rebuild
 | POST / DELETE | `/watch` | Create / remove a watcher |
 | DELETE | `/watch/all` | Remove all watchers |
 | GET | `/watch/list` | List watchers |
-| GET | `/events` | Server-Sent Events: `scan-started`, `scan-completed`, `scan-failed`, `button-pressed`, `watchers-changed` |
+| GET | `/post-process` | List post-processes |
+| POST | `/post-process` | Create a post-process (`name`, `description`, `default`) |
+| PUT / DELETE | `/post-process/:id` | Update / delete a post-process including its file |
+| GET / PUT | `/post-process/:id/file` | Download / upload the file (multipart, field `file`, overwrites) |
+| GET | `/events` | Server-Sent Events: `scan-started`, `scan-completed`, `scan-failed`, `button-pressed`, `watchers-changed`, `post-processes-changed`, `post-process-finished` |
 | GET | `/i18n`, `/i18n/:code` | Languages of the web UI (only with the UI enabled) |
 
 Examples in `rest.http`.
 
 ### File format
 
-`POST /scan` and `POST /watch` additionally accept `Format` and `Quality`. In the web UI this can be set under "File" when scanning and in the watcher editor.
+`POST /scan` and `POST /watch` additionally accept `Format`, `Quality` and `PostProcess` (ID, `none`, or omitted for the default). In the web UI this can be set under "File" when scanning and in the watcher editor.
 
 | Field | Values | Default |
 | --- | --- | --- |

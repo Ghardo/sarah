@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ScanView from './components/ScanView.vue'
 import WatchersView from './components/WatchersView.vue'
 import DevicesView from './components/DevicesView.vue'
+import PostProcessView from './components/PostProcessView.vue'
 import { api, errorMessage, loadOptions } from './api'
 import { connectEvents, live, onLive } from './events'
 import { locale, locales, setLocale, t } from './i18n'
@@ -11,7 +12,7 @@ import type { Device, SaneOption } from './types'
 
 // --- Tabs (in the URL hash so reloads/bookmarks work) ---
 
-const tabs = ['scan', 'watchers', 'devices'] as const
+const tabs = ['scan', 'watchers', 'postprocess', 'devices'] as const
 type Tab = (typeof tabs)[number]
 
 function readTab(): Tab {
@@ -100,6 +101,9 @@ const offs = [
     if (s.source === 'button') toast(t('toast.scanDone', { file: s.filename ?? '' }), 'ok')
   }),
   onLive('failed', (s) => toast(t('toast.scanFailed', { error: s.error ?? '' }), 'error')),
+  onLive('postProcessFinished', (r) => {
+    if (!r.ok) toast(t('toast.postProcessFailed', { name: r.name, file: r.filename, error: r.error ?? '' }), 'error')
+  }),
 ]
 
 onMounted(async () => {
@@ -160,6 +164,7 @@ onBeforeUnmount(() => {
       @reload-options="refreshOptions(true)"
     />
     <WatchersView v-else-if="tab === 'watchers'" :device="device" :devices="devices" />
+    <PostProcessView v-else-if="tab === 'postprocess'" />
     <DevicesView
       v-else
       :devices="devices"

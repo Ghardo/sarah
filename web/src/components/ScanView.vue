@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import AreaSelect from './AreaSelect.vue'
 import FormatFields from './FormatFields.vue'
+import PostProcessField from './PostProcessField.vue'
 import OptionsForm from './OptionsForm.vue'
 import { api, errorMessage } from '../api'
 import { live, onLive, type ScanInfo } from '../events'
@@ -25,6 +26,7 @@ interface Settings {
   newDoc: boolean
   format?: ImageFormat
   quality?: number
+  postProcess?: string
 }
 
 const values = ref<OptionValues>({})
@@ -32,6 +34,7 @@ const filename = ref('')
 const newDoc = ref(false)
 const format = ref<ImageFormat>('png')
 const quality = ref(defaults.jpegQuality)
+const postProcess = ref('')
 
 // Remember settings per device
 watch(
@@ -44,10 +47,11 @@ watch(
     newDoc.value = s?.newDoc ?? false
     format.value = s?.format ?? 'png'
     quality.value = s?.quality ?? defaults.jpegQuality
+    postProcess.value = s?.postProcess ?? ''
   },
   { immediate: true },
 )
-watch([values, filename, newDoc, format, quality], () => {
+watch([values, filename, newDoc, format, quality, postProcess], () => {
   if (props.device && props.options.length) {
     const s: Settings = {
       values: values.value,
@@ -55,6 +59,7 @@ watch([values, filename, newDoc, format, quality], () => {
       newDoc: newDoc.value,
       format: format.value,
       quality: quality.value,
+      postProcess: postProcess.value,
     }
     save(`scan:${props.device}`, s)
   }
@@ -103,6 +108,7 @@ async function scan() {
       NewDoc: newDoc.value || undefined,
       Format: format.value,
       Quality: format.value === 'jpeg' ? quality.value : undefined,
+      PostProcess: postProcess.value || undefined,
       Options: values.value,
     })
     // If the SSE event has not arrived (yet), show the result from the response
@@ -243,6 +249,7 @@ onBeforeUnmount(() => {
               </small>
             </div>
             <FormatFields v-model:format="format" v-model:quality="quality" id-prefix="scan" />
+            <PostProcessField v-model="postProcess" id-prefix="scan" />
             <label class="check">
               <input v-model="newDoc" type="checkbox" />
               {{ t('file.newDocScan') }}

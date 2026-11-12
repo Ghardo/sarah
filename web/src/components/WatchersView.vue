@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import FormatFields from './FormatFields.vue'
+import PostProcessField from './PostProcessField.vue'
 import OptionsForm from './OptionsForm.vue'
 import { api, errorMessage, loadOptions } from '../api'
 import { live, onLive } from '../events'
 import { t } from '../i18n'
 import { filenamePlaceholders, formatValue, sensorOptions, suggestedValues } from '../options'
 import { defaults } from '../defaults'
+import { postProcessName } from '../postprocess'
 import type { Device, SaneOption, ScanRequest, WatcherStatus } from '../types'
 
 const props = defineProps<{ device: string; devices: Device[] }>()
@@ -84,7 +86,7 @@ let flashTimer: number | undefined
 // --- Editor ---
 
 /** In the editor format and quality are always set, so the fields show something. */
-type Draft = ScanRequest & Required<Pick<ScanRequest, 'Format' | 'Quality'>>
+type Draft = ScanRequest & Required<Pick<ScanRequest, 'Format' | 'Quality' | 'PostProcess'>>
 
 interface Editor {
   original: { Device: string; WatchSensor: string } | null
@@ -137,6 +139,7 @@ async function startNew() {
       NewDoc: false,
       Format: 'png',
       Quality: defaults.jpegQuality,
+      PostProcess: '',
       Options: {},
     },
   }
@@ -162,6 +165,7 @@ async function edit(w: WatcherStatus) {
       NewDoc: !!c.NewDoc,
       Format: c.Format ?? 'png',
       Quality: c.Quality || defaults.jpegQuality,
+      PostProcess: c.PostProcess ?? '',
       Options: { ...(c.Options ?? {}) },
     },
   }
@@ -192,6 +196,7 @@ async function saveEditor() {
       NewDoc: d.NewDoc || undefined,
       Format: d.Format,
       Quality: d.Format === 'jpeg' ? d.Quality : undefined,
+      PostProcess: d.PostProcess || undefined,
       Options: d.Options,
     })
     // Button or device changed: remove the old entry
@@ -288,6 +293,9 @@ onBeforeUnmount(() => {
               <span v-else class="badge" :class="w.active ? 'ok' : 'off'">{{ w.active ? t('watchers.active') : t('watchers.inactive') }}</span>
               <span v-if="w.config.NewDoc" class="badge">{{ t('watchers.newDoc') }}</span>
               <span class="badge">{{ formatLabel(w) }}</span>
+              <span v-if="postProcessName(w.config.PostProcess)" class="badge" :title="t('postprocess.field')">
+                → {{ postProcessName(w.config.PostProcess) }}
+              </span>
             </div>
             <div class="watcher-sub">
               {{ deviceLabel(w.config.Device) }} · <code>{{ w.config.Filename || defaults.filenameTemplate }}</code>
@@ -369,6 +377,7 @@ onBeforeUnmount(() => {
               </small>
             </div>
             <FormatFields v-model:format="editor.draft.Format" v-model:quality="editor.draft.Quality" id-prefix="w" />
+            <PostProcessField v-model="editor.draft.PostProcess" id-prefix="w" />
             <label class="check">
               <input v-model="editor.draft.NewDoc" type="checkbox" />
               {{ t('file.newDocWatcher') }}

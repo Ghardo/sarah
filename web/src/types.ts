@@ -63,6 +63,8 @@ export interface ScanRequest {
   Format?: ImageFormat
   /** JPEG quality 1–100 (only with format jpeg) */
   Quality?: number
+  /** Post-process: omitted = default, "none" = none, otherwise the ID */
+  PostProcess?: string
   Options: OptionValues
 }
 
@@ -71,6 +73,24 @@ export interface ScanResult {
   width?: number
   height?: number
   message?: string
+}
+
+export interface PostProcess {
+  id: string
+  name: string
+  description?: string
+  default?: boolean
+  file?: string
+  size?: number
+  modified?: string
+  executable?: boolean
+  missing?: boolean
+}
+
+export interface PostProcessInput {
+  name: string
+  description: string
+  default: boolean
 }
 
 export interface WatcherStatus {

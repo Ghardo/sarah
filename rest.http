@@ -202,3 +202,44 @@ DELETE {{host}}/watch/all
 # 3. Paste the file name below.
 @scanFilename = scan_xxxxxxxx_xxxxxx.png
 GET {{host}}/scans/{{scanFilename}}
+
+# -----------------------------------------------------
+# POST-PROCESSES
+# -----------------------------------------------------
+
+###
+# GET: List post-processes
+GET {{host}}/post-process
+
+###
+# POST: Create a post-process
+POST {{host}}/post-process
+Content-Type: application/json
+
+{
+    "name": "Example",
+    "description": "Does nothing",
+    "default": true
+}
+
+###
+# PUT: Upload the file (replaces the existing one)
+PUT {{host}}/post-process/example/file
+Content-Type: multipart/form-data; boundary=sarah
+
+--sarah
+Content-Disposition: form-data; name="file"; filename="post-process.sh"
+
+< ./post-process/post-process.sh
+--sarah--
+
+###
+# POST: Scan with a specific post-process ("none" = none, field omitted = default)
+POST {{host}}/scan
+Content-Type: application/json
+
+{
+    "Device": "{{deviceName}}",
+    "PostProcess": "none",
+    "Options": { "mode": "Color", "resolution": 300 }
+}
