@@ -2,9 +2,15 @@
 
 **sarah** – **SA**ne **R**est **A**pi (the *h* is just there to make it readable)
 
-REST API for SANE scanners with scanner button watching and a web UI. Meant as a companion to paperless-ngx.
+REST API for SANE scanners with scanner button watching and a web UI. Meant as a companion to [paperless-ngx](https://docs.paperless-ngx.com) or [Papra](https://papra.app).
 
 Documentation: see the [wiki](https://github.com/Ghardo/sarah/wiki).
+
+## Why a REST API and not a desktop app?
+
+The document managers sarah works with, paperless-ngx or Papra, run in the browser, so scanning should too: a simple scan UI, served by the small computer the scanner is plugged into, and a REST API underneath for scripts and other tools. Nothing has to be installed on the device you scan from.
+
+It is still a local tool: you have to stand next to the scanner to change the pages anyway. But that is exactly where a tablet comes in handy, and the web UI is made for it (it looks rather good there, too).
 
 ## Tested with
 
