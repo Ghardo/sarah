@@ -13,7 +13,7 @@ Documentation: see the [wiki](https://github.com/Ghardo/sarah/wiki).
 | Canon CanoScan LiDE 220 | `genesys` | Raspberry Pi 4 | ✅ | ✅ `scan`, `copy`, `email`, `file`, `extra` |
 | Canon PIXMA MG2500 Series | `pixma` | Raspberry Pi 4 | ✅ | ❌ the two buttons are copy buttons the printer handles itself; nothing reaches the computer |
 
-> **Testers welcome:** If you run sarah with another scanner (or another board than a Raspberry Pi 4), please open an issue with the **Scanner report** template and tell whether scanning and the buttons work. [Reporting scanner problems](https://github.com/Ghardo/sarah/wiki/Reporting-Scanner-Problems) explains how to collect the details with `scripts/sarah-diagnostics.sh`.
+> **Testers welcome:** If you run sarah with a scanner or computer that is not in the table, please open an issue with the **Scanner report** template and tell whether scanning and the buttons work. [Reporting scanner problems](https://github.com/Ghardo/sarah/wiki/Reporting-Scanner-Problems) explains how to collect the details with `scripts/sarah-diagnostics.sh`.
 
 ## Build
 
