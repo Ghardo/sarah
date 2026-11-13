@@ -1,0 +1,124 @@
+name: Scanner report
+description: A scanner does not work properly with sarah, or you tested a scanner and want to report how it went.
+title: "[Scanner] <vendor> <model>: <short description>"
+labels: ["scanner"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing sarah! Reports about scanners that **work** help just as much as bug reports.
+
+        Before you fill this in, please run the diagnostics script on the computer the scanner is connected to.
+        How to do that, and what else helps, is explained in the wiki: [Reporting scanner problems](https://github.com/Ghardo/sarah/wiki/Reporting-Scanner-Problems).
+
+  - type: input
+    id: scanner
+    attributes:
+      label: Scanner
+      description: Vendor and model as printed on the device, and the SANE device name from `/list` if you have it.
+      placeholder: "Canon CanoScan LiDE 220, genesys:libusb:001:003"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection
+      options:
+        - USB
+        - Network (Wi-Fi or Ethernet)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: system
+    attributes:
+      label: Computer and OS
+      description: Board or computer, operating system, and which sarah binary you use.
+      placeholder: "Raspberry Pi 4, Raspberry Pi OS Bookworm 64-bit, sarah-linux-arm64"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: sarah version
+      description: From `GET /version` or the footer of the web UI.
+      placeholder: "2.10.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: detected
+    attributes:
+      label: Is the scanner listed?
+      description: In the web UI under Devices, or in `GET /list`.
+      options:
+        - "Yes"
+        - "No"
+        - Sometimes, or under a changing name
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scanning
+    attributes:
+      label: Does scanning work?
+      description: A scan from the web UI or with `POST /scan`.
+      options:
+        - "Yes"
+        - Partly (wrong area, colors, resolution, stripes …)
+        - "No"
+        - Not tested
+    validations:
+      required: true
+
+  - type: dropdown
+    id: buttons
+    attributes:
+      label: Do the buttons on the scanner work?
+      description: Pressing a button in the open watcher editor fills in the button, a watcher starts a scan.
+      options:
+        - "Yes, all of them"
+        - Some of them
+        - "No"
+        - The scanner has no buttons
+        - Not tested
+    validations:
+      required: true
+
+  - type: textarea
+    id: buttons-detail
+    attributes:
+      label: Buttons
+      description: |
+        Which buttons does the scanner have (labels or symbols), and what happened when you pressed each one?
+        Note which buttons the device handles itself (e.g. copy buttons on a multifunction printer).
+      placeholder: |
+        - "PDF" button: shows up as `file`, watcher scans
+        - "Copy" button: printer copies, nothing arrives in sarah
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened, and what did you expect?
+      description: Steps to reproduce, error messages from the web UI. Leave empty if everything works.
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics report
+      description: |
+        Output of `scripts/sarah-diagnostics.sh` (best with `-b 30` for the button test).
+        Please check it for anything you do not want to publish (host name, user names, serial number) before you paste it.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: sane-debug
+    attributes:
+      label: SANE debug log (optional)
+      description: Only if the scanner is not found or scanning fails, see "SANE debug log" in the wiki page.
+      render: text
