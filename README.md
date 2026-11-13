@@ -6,7 +6,7 @@ REST API for SANE scanners with scanner button watching and a web UI. Meant as a
 
 Documentation: see the [wiki](https://github.com/Ghardo/sarah/wiki).
 
-> **Testers welcome:** sarah has only been tested with a Canon CanoScan LiDE 220 so far. If you run it with another scanner (or another board than a Raspberry Pi 4), please open an issue and tell whether scanning and the buttons work.
+> **Testers welcome:** sarah has only been tested with a Canon CanoScan LiDE 220 so far. If you run it with another scanner (or another board than a Raspberry Pi 4), please open an issue with the **Scanner report** template and tell whether scanning and the buttons work. [Reporting scanner problems](https://github.com/Ghardo/sarah/wiki/Reporting-Scanner-Problems) explains how to collect the details with `scripts/sarah-diagnostics.sh`.
 
 ## Build
 

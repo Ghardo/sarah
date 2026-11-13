@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How to report a scanner problem
+    url: https://github.com/Ghardo/sarah/wiki/Reporting-Scanner-Problems
+    about: Diagnostics script, button test, SANE debug log, what to check first.
