@@ -30,6 +30,10 @@ type ScanRequest struct {
 	Quality     int            `json:"Quality,omitempty"`     // JPEG quality 1–100, default 85
 	PostProcess string         `json:"PostProcess,omitempty"` // "" = default, "none" = none, else the ID (postprocess.go)
 	Options     map[string]any `json:"Options"`
+	// Vendor and model of the device, stored with watchers so the device is found
+	// again when its name changes (e.g. new USB address after plugging it in again)
+	DeviceVendor string `json:"DeviceVendor,omitempty"`
+	DeviceModel  string `json:"DeviceModel,omitempty"`
 }
 
 type Config struct {
@@ -69,7 +73,7 @@ var (
 	watcherConns     = make(map[string]*sane.Conn)
 )
 
-const version = "2.9.0"
+const version = "2.10.0"
 
 func main() {
 	cfg, err := loadConfig()
@@ -188,7 +192,12 @@ func startWatcher(scanDir string) gin.HandlerFunc {
 			return
 		}
 
-		watcherKey := fmt.Sprintf("%s:%s", sr.Device, sr.WatchSensor)
+		sr.Device = canonicalDevice(sr.Device)
+		if info, ok := devices.info(sr.Device); ok {
+			sr.DeviceVendor, sr.DeviceModel = info.Vendor, info.Model
+		}
+
+		watcherKey := watcherKeyOf(sr.Device, sr.WatchSensor)
 
 		allConfigs, _ := loadWatchersFromFile()
 		allConfigs[watcherKey] = sr
@@ -222,10 +231,11 @@ func stopWatcher(c *gin.Context) {
 		return
 	}
 
-	watcherKey := fmt.Sprintf("%s:%s", sr.Device, sr.WatchSensor)
+	watcherKey := watcherKeyOf(sr.Device, sr.WatchSensor)
 
 	watcherMutex.Lock()
 	delete(activeWatchers, watcherKey)
+	delete(watcherPaused, watcherKey)
 	watcherMutex.Unlock()
 
 	allConfigs, err := loadWatchersFromFile()
@@ -261,6 +271,7 @@ func stopAllWatchers(c *gin.Context) {
 
 	log.Println("Stopping ALL active watchers (clearing list)...")
 	activeWatchers = make(map[string]ScanRequest)
+	watcherPaused = make(map[string]bool)
 	watcherMutex.Unlock()
 
 	if err := saveWatchersToFile(make(map[string]ScanRequest)); err != nil {
@@ -273,7 +284,9 @@ func stopAllWatchers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "All active watchers stopped and configuration file cleared."})
 }
 
-// globalWatcherLoop: this ONE goroutine polls all active watchers one after another.
+// globalWatcherLoop: this ONE goroutine polls the buttons of all present devices one after another.
+// Watchers whose device is missing are paused; the devices are looked for again every
+// SARAH_DISCOVERY_INTERVAL until they are back.
 func globalWatcherLoop(scanDir string, pollInterval time.Duration) {
 	cooldowns := make(map[string]time.Time)
 	ticker := time.NewTicker(pollInterval)
@@ -282,47 +295,52 @@ func globalWatcherLoop(scanDir string, pollInterval time.Duration) {
 	// Cooldown for devices so the scan process has time to take over access
 	deviceCooldowns := make(map[string]time.Time)
 
-	// Cache for sensor options so conn.Options() is not called on every loop
-	deviceSensors := make(map[string][]sane.Option)
+	// Buttons per open connection, so conn.Options() is not called on every loop
+	deviceButtonOpts := make(map[string]deviceButtons)
 
-	// Discover devices once at startup, since the devices do not change
-	var knownDevices []string
+	// Consecutive read errors per device
+	errorCounts := make(map[string]int)
+
 	saneDeviceMutex.Lock()
-	if devs, err := sane.Devices(); err == nil {
+	if devs, err := discoverDevices(); err == nil {
+		names := make([]string, 0, len(devs))
 		for _, d := range devs {
-			knownDevices = append(knownDevices, d.Name)
+			names = append(names, d.Name)
 		}
-		log.Printf("Initial discovery: Found %d devices: %v", len(knownDevices), knownDevices)
+		log.Printf("Initial discovery: Found %d devices: %v", len(names), names)
 	} else {
 		log.Printf("Initial discovery failed: %v", err)
 	}
 	saneDeviceMutex.Unlock()
+	lastDiscovery := time.Now()
 
 	log.Printf(">>> Global Watcher Loop started (poll interval %s) <<<", pollInterval)
 
 	for {
 		<-ticker.C
 
+		// Look for the devices of paused watchers again now and then
+		if syncWatcherDevices() && time.Since(lastDiscovery) >= settings.DiscoveryInterval {
+			saneDeviceMutex.Lock()
+			if _, err := discoverDevices(); err != nil {
+				log.Printf("Device discovery failed: %v", err)
+			}
+			saneDeviceMutex.Unlock()
+			lastDiscovery = time.Now()
+			syncWatcherDevices()
+		}
+
 		watcherMutex.Lock()
-		// Snapshot of the active watchers and the devices to poll
-		currentWatchers := make(map[string]ScanRequest)
-		devicesToPoll := make(map[string]bool)
+		// Snapshot of the active watchers
+		currentWatchers := make(map[string]ScanRequest, len(activeWatchers))
 		for key, req := range activeWatchers {
 			currentWatchers[key] = req
-			devicesToPoll[req.Device] = true
 		}
 		watcherMutex.Unlock()
 
-		// Add automatically discovered devices so button events are logged even without a watcher
-		for _, dev := range knownDevices {
-			devicesToPoll[dev] = true
-		}
-
-		if len(devicesToPoll) == 0 {
-			continue
-		}
-
-		for device := range devicesToPoll {
+		// All present devices are polled, so button events are reported even without a watcher.
+		// The devices of paused watchers are not present and therefore skipped.
+		for _, device := range devices.names() {
 			if time.Now().Before(deviceCooldowns[device]) {
 				continue
 			}
@@ -335,54 +353,24 @@ func globalWatcherLoop(scanDir string, pollInterval time.Duration) {
 				c, err := openDevice(device)
 				if err != nil {
 					saneDeviceMutex.Unlock()
-					if !strings.Contains(err.Error(), "device busy") {
-						log.Printf("Watcher poll error (%s): %v", device, err)
+					// Busy: another program uses the scanner, try again on the next tick
+					if !strings.Contains(err.Error(), "device busy") && devices.markGone(device) {
+						log.Printf("Device '%s' can no longer be opened (%v); not polled until it is found again", device, err)
 					}
 					continue
 				}
-
-				// Fetch options once and cache them
-				rawOpts := c.Options()
-				var cached []sane.Option
-				for _, opt := range rawOpts {
-					if opt.Group == "Sensors" && opt.IsDetectable {
-						if opt.Type == sane.TypeBool || opt.Type == sane.TypeInt {
-							cached = append(cached, opt)
-						}
-					}
-				}
-				deviceSensors[device] = cached
-
+				deviceButtonOpts[device] = buttonOptions(c.Options())
 				conn = c
 				watcherConnMutex.Lock()
 				watcherConns[device] = conn
 				watcherConnMutex.Unlock()
 			}
 
-			// Use cached options instead of calling conn.Options() every time
-			opts := deviceSensors[device]
+			opts := deviceButtonOpts[device]
 			var eventDetected bool
 			var pressedButton string
-			var errorCount int
 
-			for _, opt := range opts {
-				// Only options in the "Sensors" group are checked.
-				// This is more reliable than name heuristics, since SANE buttons live there.
-				if opt.Group != "Sensors" {
-					continue
-				}
-
-				if !opt.IsDetectable {
-					continue
-				}
-
-				isBool := opt.Type == sane.TypeBool
-				isInt := opt.Type == sane.TypeInt
-
-				if !isBool && !isInt {
-					continue
-				}
-
+			for _, opt := range opts.buttons {
 				val, err := conn.GetOption(opt.Name)
 				if err != nil {
 					// Some drivers return "invalid argument" for sensors that are not ready.
@@ -391,30 +379,20 @@ func globalWatcherLoop(scanDir string, pollInterval time.Duration) {
 						continue
 					}
 
-					// Log the error, but do not stop right away.
-					// This is the crucial point: if another sensor option before 'extra' returns an error,
-					// a 'break' here would prevent 'extra' from ever being checked.
+					// Log the error, but do not stop right away: a 'break' here would prevent
+					// the following buttons from ever being checked.
 					log.Printf("Watcher: Could not get option '%s' on device '%s': %v. Skipping this option.", opt.Name, device, err)
-
-					errorCount++
-					if errorCount > settings.SensorErrorLimit {
-						log.Printf("Watcher: Too many consecutive errors on device '%s'. Assuming connection is lost.", device)
-						takeWatcherConn(device)
-						conn.Close()
-						eventDetected = false
-						break
-					}
+					errorCounts[device]++
 					continue
 				}
-				errorCount = 0 // reset on success
+				errorCounts[device] = 0 // reset on success
 
 				var pressed bool
-				if isBool {
-					pressed, _ = val.(bool)
-				} else if isInt {
-					if v, ok := val.(int); ok && v != 0 {
-						pressed = true
-					}
+				switch v := val.(type) {
+				case bool:
+					pressed = v
+				case int:
+					pressed = v != 0
 				}
 
 				if pressed {
@@ -423,10 +401,23 @@ func globalWatcherLoop(scanDir string, pollInterval time.Duration) {
 					break
 				}
 			}
+
+			switch {
+			case errorCounts[device] > settings.SensorErrorLimit:
+				log.Printf("Watcher: Too many consecutive errors on device '%s'. Assuming connection is lost.", device)
+				takeWatcherConn(device)
+				conn.Close()
+				delete(errorCounts, device)
+				eventDetected = false
+			case eventDetected && opts.latched:
+				// The backend keeps the press until the device is opened again
+				takeWatcherConn(device)
+				conn.Close()
+			}
 			saneDeviceMutex.Unlock()
 
 			if eventDetected {
-				watcherKey := fmt.Sprintf("%s:%s", device, pressedButton)
+				watcherKey := watcherKeyOf(device, pressedButton)
 
 				if time.Now().Before(cooldowns[watcherKey]) {
 					continue
@@ -505,6 +496,8 @@ func executeWatchedScan(sr ScanRequest, scanDir string, watcherKey string) {
 type WatcherStatus struct {
 	Config ScanRequest `json:"config"`
 	Active bool        `json:"active"`
+	// false while the device is missing; the watcher is paused until it is back
+	DevicePresent bool `json:"device_present"`
 }
 
 func listWatchers(c *gin.Context) {
@@ -523,8 +516,9 @@ func listWatchers(c *gin.Context) {
 		_, isActive := activeWatchers[key]
 
 		status := WatcherStatus{
-			Config: config,
-			Active: isActive,
+			Config:        config,
+			Active:        isActive,
+			DevicePresent: !watcherPaused[key],
 		}
 		responseList = append(responseList, status)
 	}
@@ -645,6 +639,7 @@ func getDeviceConfig(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Query parameter 'device' is required"})
 		return
 	}
+	device = canonicalDevice(device)
 
 	saneDeviceMutex.Lock()
 	defer saneDeviceMutex.Unlock()
@@ -666,11 +661,19 @@ func getDeviceConfig(c *gin.Context) {
 	c.JSON(http.StatusOK, sc.Options())
 }
 func listDevices(c *gin.Context) {
-	devs, err := sane.Devices()
-	if err != nil {
-		log.Printf("ERROR: Failed to list SANE devices: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not list devices"})
-		return
+	var devs []sane.Device
+	if lockSane(time.Second) {
+		var err error
+		devs, err = discoverDevices()
+		saneDeviceMutex.Unlock()
+		if err != nil {
+			log.Printf("ERROR: Failed to list SANE devices: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not list devices"})
+			return
+		}
+	} else {
+		// A scan is running: answer with the last discovery instead of waiting for it
+		devs = devices.list()
 	}
 	if len(devs) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No devices found."})
@@ -822,6 +825,8 @@ type scannedImage struct {
 func scanDevice(device string, options func([]sane.Option) map[string]any) (*scannedImage, error) {
 	saneDeviceMutex.Lock()
 	defer saneDeviceMutex.Unlock()
+
+	device = canonicalDevice(device)
 
 	// If the watcher holds the device open, it is forcibly closed here.
 	// This happens under the same lock as opening, so the watcher

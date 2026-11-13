@@ -71,6 +71,7 @@ Everything that is not set per scan or watcher in the web UI. Durations as Go du
 | `SARAH_POLL_INTERVAL` | `50ms` | How often the scanner buttons are polled (at least `10ms`). Larger values may miss short presses |
 | `SARAH_SCAN_COOLDOWN` | `2s` | Pause of the button polling of a device after a watcher scan was triggered |
 | `SARAH_BUTTON_COOLDOWN` | `1s` | Debounce of a button without watcher, so a press is reported only once |
+| `SARAH_DISCOVERY_INTERVAL` | `30s` | How often the devices are looked for again while a watcher is paused because its scanner is missing (at least `1s`) |
 | `SARAH_SENSOR_ERROR_LIMIT` | `5` | Consecutive errors reading the buttons after which the connection is reopened |
 | `SARAH_WATCHER_START_DELAY` | `5s` | Delay at startup before the saved watchers are loaded |
 | `SARAH_PREVIEW_RESOLUTION` | `75` | Resolution of the preview for the area selection in dpi (the driver picks the closest allowed value) |

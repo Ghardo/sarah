@@ -290,6 +290,9 @@ onBeforeUnmount(() => {
             <div class="watcher-title">
               <span class="key">{{ optionTitle(w.config.Device, w.config.WatchSensor ?? '') }}</span>
               <span v-if="isScanning(w)" class="badge busy"><span class="spinner small"></span> {{ t('watchers.scanning') }}</span>
+              <span v-else-if="w.device_present === false" class="badge off" :title="t('watchers.deviceMissingHint')">
+                {{ t('watchers.deviceMissing') }}
+              </span>
               <span v-else class="badge" :class="w.active ? 'ok' : 'off'">{{ w.active ? t('watchers.active') : t('watchers.inactive') }}</span>
               <span v-if="w.config.NewDoc" class="badge">{{ t('watchers.newDoc') }}</span>
               <span class="badge">{{ formatLabel(w) }}</span>
