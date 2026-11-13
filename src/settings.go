@@ -27,6 +27,8 @@ type Settings struct {
 	ButtonCooldown time.Duration
 	// Consecutive errors reading the buttons after which the connection is reopened (SARAH_SENSOR_ERROR_LIMIT)
 	SensorErrorLimit int
+	// How often the devices of paused watchers (device missing) are looked for again (SARAH_DISCOVERY_INTERVAL)
+	DiscoveryInterval time.Duration
 	// Resolution of the preview for the area selection in dpi (SARAH_PREVIEW_RESOLUTION)
 	PreviewResolution int
 	// JPEG quality if a scan or watcher does not set one (SARAH_JPEG_QUALITY)
@@ -53,6 +55,7 @@ func defaultSettings() Settings {
 		ScanCooldown:      2 * time.Second,
 		ButtonCooldown:    1 * time.Second,
 		SensorErrorLimit:  5,
+		DiscoveryInterval: 30 * time.Second,
 		PreviewResolution: 75,
 		JPEGQuality:       85,
 		FilenameTemplate:  "scan_{index}_{date}_{time}",
@@ -80,6 +83,7 @@ func loadSettings() (Settings, error) {
 	check(envDuration("SARAH_SCAN_COOLDOWN", &s.ScanCooldown, 0))
 	check(envDuration("SARAH_BUTTON_COOLDOWN", &s.ButtonCooldown, 0))
 	check(envDuration("SARAH_EVENTS_PING", &s.EventsPing, time.Second))
+	check(envDuration("SARAH_DISCOVERY_INTERVAL", &s.DiscoveryInterval, time.Second))
 	check(envInt("SARAH_SENSOR_ERROR_LIMIT", &s.SensorErrorLimit, 1, 1000))
 	check(envInt("SARAH_PREVIEW_RESOLUTION", &s.PreviewResolution, 10, 1200))
 	check(envInt("SARAH_JPEG_QUALITY", &s.JPEGQuality, 1, 100))

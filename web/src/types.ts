@@ -96,4 +96,6 @@ export interface PostProcessInput {
 export interface WatcherStatus {
   config: ScanRequest
   active: boolean
+  /** false while the scanner is missing; the watcher is paused until it is back */
+  device_present?: boolean
 }

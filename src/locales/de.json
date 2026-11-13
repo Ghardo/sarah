@@ -102,6 +102,8 @@
     "scanning": "scannt",
     "active": "aktiv",
     "inactive": "inaktiv",
+    "deviceMissing": "Scanner fehlt – pausiert",
+    "deviceMissingHint": "Der Scanner ist nicht angeschlossen. Der Watcher läuft von selbst weiter, sobald er wieder da ist.",
     "newDoc": "neues Dokument",
     "deleteAll": "Alle löschen",
     "confirmDelete": "Watcher für Taste „{button}“ löschen?",

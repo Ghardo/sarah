@@ -10,15 +10,19 @@ export function isScanOption(o: SaneOption): boolean {
     o.IsSettable &&
     o.Length === 1 && // arrays (e.g. gamma tables) are left out
     o.Group !== 'Sensors' &&
+    o.Group !== 'Buttons' &&
     valueTypes.includes(o.Type)
   )
 }
 
-/** Hardware buttons the watcher can watch (as in globalWatcherLoop). */
+/**
+ * Hardware buttons the watcher can watch (as isWatchableButton in src/devices.go).
+ * Most backends use the group "Sensors"; pixma uses "Buttons", where only button-1, button-2 … are buttons.
+ */
 export function sensorOptions(opts: SaneOption[]): SaneOption[] {
   return opts.filter(
     (o) =>
-      o.Group === 'Sensors' &&
+      (o.Group === 'Sensors' || (o.Group === 'Buttons' && o.Name.startsWith('button-'))) &&
       o.IsActive &&
       o.IsDetectable &&
       (o.Type === OptType.Bool || o.Type === OptType.Int),
